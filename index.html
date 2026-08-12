@@ -269,7 +269,7 @@
   <div id="grid"></div>
   <div class="allTableWrap" id="allTableWrap" style="display:none"></div>
 
-  <footer>이 저장소에 <code>data.xlsx</code>가 있으면 모든 기기에서 자동으로 같은 데이터를 봅니다. <span class="clearlink" id="refreshShared">새로고침</span><span class="admin-only"> · <span class="clearlink" id="clearData">저장된 데이터 지우기</span></span></footer>
+  <footer>이 저장소에 <code>data.xlsx</code>(또는 <code>data.xlsx.xlsx</code>)가 있으면 모든 기기에서 자동으로 같은 데이터를 봅니다. <span class="clearlink" id="refreshShared">새로고침</span><span class="admin-only"> · <span class="clearlink" id="clearData">저장된 데이터 지우기</span></span></footer>
 </div>
 
 <script>
@@ -382,9 +382,9 @@ document.getElementById('clearData').addEventListener('click', async () => {
   diag('저장된 데이터를 지웠습니다.');
 });
 document.getElementById('refreshShared').addEventListener('click', async () => {
-  diag('공유 데이터 파일(' + SHARED_DATA_FILE + ') 다시 확인 중…');
+  diag('공유 데이터 파일 다시 확인 중… (' + SHARED_DATA_CANDIDATES.join(', ') + ')');
   const ok = await tryLoadSharedFile();
-  if (!ok) diag('저장소에서 ' + SHARED_DATA_FILE + '을 찾지 못했습니다. 저장소에 그 이름으로 파일을 올려두면 모든 기기에서 자동으로 불러옵니다.');
+  if (!ok) diag('저장소에서 공유 데이터 파일을 찾지 못했습니다 (' + SHARED_DATA_CANDIDATES.join(', ') + ' 중 하나로 올려두면 모든 기기에서 자동으로 불러옵니다).');
 });
 
 function setView(view){
@@ -394,21 +394,22 @@ function setView(view){
   renderDashboard();
 }
 
-const SHARED_DATA_FILE = 'data.xlsx';
+const SHARED_DATA_CANDIDATES = ['data.xlsx', 'data.xlsx.xlsx', 'Data.xlsx', 'DATA.xlsx', 'data.xls'];
 
 async function tryLoadSharedFile(){
   if (typeof XLSX === 'undefined') return false;
-  try{
-    const res = await fetch(SHARED_DATA_FILE + '?t=' + Date.now(), { cache: 'no-store' });
-    if (!res.ok) return false;
-    const buf = await res.arrayBuffer();
-    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
-    processWorkbook(wb, SHARED_DATA_FILE + ' (공유 데이터)', false);
-    diag('저장소의 공유 데이터 파일(' + SHARED_DATA_FILE + ')을 자동으로 불러왔습니다 · ' + rawRecords.length + '건');
-    return true;
-  }catch(err){
-    return false;
+  for (const name of SHARED_DATA_CANDIDATES){
+    try{
+      const res = await fetch(name + '?t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) continue;
+      const buf = await res.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+      processWorkbook(wb, name + ' (공유 데이터)', false);
+      diag('저장소의 공유 데이터 파일(' + name + ')을 자동으로 불러왔습니다 · ' + rawRecords.length + '건');
+      return true;
+    }catch(err){ /* 다음 후보 이름 시도 */ }
   }
+  return false;
 }
 
 (async function init(){
@@ -427,7 +428,7 @@ async function tryLoadSharedFile(){
         rawRecords = parsed.records;
         filepill.style.display = 'inline-flex';
         filepill.textContent = (parsed.fileName || '이전 업로드') + ' · ' + rawRecords.length + '건 (이 기기에 저장된 데이터 자동 복원)';
-        diag('이 기기에 저장된 데이터를 자동으로 불러왔습니다 (' + rawRecords.length + '건' + (parsed.savedAt ? ', ' + new Date(parsed.savedAt).toLocaleString('ko-KR') + ' 저장' : '') + ') · 공유 데이터 파일(' + SHARED_DATA_FILE + ')은 아직 저장소에 없습니다.');
+        diag('이 기기에 저장된 데이터를 자동으로 불러왔습니다 (' + rawRecords.length + '건' + (parsed.savedAt ? ', ' + new Date(parsed.savedAt).toLocaleString('ko-KR') + ' 저장' : '') + ') · 공유 데이터 파일은 아직 저장소에 없습니다.');
         rebuildAndRender();
         return;
       }
@@ -530,8 +531,9 @@ function parseSheet(json, sheetName, fallbackHeaders){
   const cCategory = col(['카테고리','분류']);
   const cQty = col(['입고수량']);
   const cDate = col(['입고일자','입고날짜']);
-  const cPrice = col(['단가'], ['누적']);
+  const cPrice = col(['단가'], ['누적','잔여']);
   const cCumAvg = col(['누적평균단가','누적단가']);
+  const cSheetAvg = col(['잔여재고단가','재고단가','평균단가']);
   const cUse = col(['사용수량']);
   const cStock = col(['재고수량','재고']);
 
@@ -541,7 +543,9 @@ function parseSheet(json, sheetName, fallbackHeaders){
     const board = row[cBoard];
     if (!board) continue;
     const priceRaw = row[cPrice];
-    if (priceRaw == null || String(priceRaw).includes('평균단가')) continue;
+    if (priceRaw != null && String(priceRaw).includes('평균단가')) continue;
+    const qtyRaw = row[cQty], useRaw = row[cUse];
+    if (priceRaw == null && qtyRaw == null && useRaw == null) continue; // 완전히 빈 행만 건너뜀
 
     const dateRaw = cDate >= 0 ? row[cDate] : null;
     let month = null, year = null, exactDate = null;
@@ -563,6 +567,7 @@ function parseSheet(json, sheetName, fallbackHeaders){
       qty: toNum(row[cQty]),
       price: toNum(priceRaw),
       cumAvg: cCumAvg >= 0 ? toNum(row[cCumAvg]) : null,
+      sheetAvg: cSheetAvg >= 0 ? toNum(row[cSheetAvg]) : null,
       use: toNum(row[cUse]),
       stock: cStock >= 0 ? toNum(row[cStock]) : null,
       order: i
@@ -651,29 +656,24 @@ function renderDashboard(){
 
   // 모델별 월별 시리즈 계산 (카드 뷰/표 뷰 공통)
   //
-  // 중요: 이 시트의 "입고수량"은 순수 신규입고가 아니라, 전월 남은 재고를 그대로
-  // 다음 달 입고수량으로 이월 기재하는 방식입니다 (예: 10월 재고 150개 → 11월 입고 150개로
-  // 그대로 이어짐). 즉 각 행의 입고수량 자체가 이미 "이월재고 + 신규입고"를 담고 있어서,
-  // 이걸 매번 새로 더해나가는 이동평균 계산을 하면 이월분이 중복으로 계속 쌓입니다.
-  // 그래서 재고수량·단가는 자체 계산하지 않고, 시트에 이미 있는 그 달의 값을 그대로 읽습니다
-  // (재고수량 = 그 행의 입고수량 - 사용수량, 이미 시트 수식이 정확히 계산해둔 값).
+  // 이 파일은 "재고수량"과 "잔여재고단가"를 시트 자체의 수식(같은 모델의 마지막 행을
+  // LOOKUP으로 찾아 이어가는 방식)으로 이미 정확히 계산해두었습니다. 그래서 여기서는
+  // 그 값을 다시 계산하지 않고, 시트에 있는 값을 그대로 신뢰해서 읽기만 합니다.
   const now = new Date();
   const todayKey = now.getFullYear() * 100 + (now.getMonth() + 1); // 예: 2026년 8월 → 202608
   const models = [];
   const anomalies = [];
   Object.keys(byBoard).sort().forEach(board => {
-    let validRows = byBoard[board].filter(r => r.price != null && (r.resolvedYear * 100 + r.month) <= todayKey);
+    let validRows = byBoard[board].filter(r => (r.qty != null || r.price != null || r.use != null) && (r.resolvedYear * 100 + r.month) <= todayKey);
     validRows.sort((a,b) => {
       const ak = a.resolvedYear*100+a.month, bk = b.resolvedYear*100+b.month;
       return ak !== bk ? ak - bk : a.order - b.order;
     });
     if (validRows.length === 0) return;
 
-    // 입고수량이 음수인 행(물리적으로 불가능 — 테스트/오입력으로 추정)은 이상치로 표시만 하고
-    // 월별 집계(입고수량 합계)에서는 제외합니다.
+    // 입고수량이 음수인 행(물리적으로 불가능 — 테스트/오입력으로 추정)은 이상치로 표시만 합니다.
     validRows.forEach(r => {
       if ((r.qty || 0) < 0){
-        r.excluded = true;
         anomalies.push({ board, ym: r.resolvedYear + '-' + String(r.month).padStart(2,'0'), qty: r.qty, price: r.price });
       }
     });
@@ -681,12 +681,11 @@ function renderDashboard(){
     const byYm = {};
     validRows.forEach(r => {
       const ym = r.resolvedYear + '-' + String(r.month).padStart(2,'0');
-      const g = (byYm[ym] ||= { qtySum: 0, useSum: 0, lastStock: null, lastPrice: null, lastCumAvg: null, monthKey: r.resolvedYear*100+r.month });
-      if (!r.excluded) g.qtySum += r.qty || 0;
+      const g = (byYm[ym] ||= { qtySum: 0, useSum: 0, lastStock: null, lastAvg: null, monthKey: r.resolvedYear*100+r.month });
+      g.qtySum += r.qty || 0;
       g.useSum += r.use || 0;
-      if (r.stock != null) g.lastStock = r.stock;       // 그 달 마지막(입력순서 기준) 재고수량 — 시트 값 그대로
-      if (!r.excluded) g.lastPrice = r.price;             // 그 달 마지막 입고단가 — 시트 값 그대로
-      if (r.cumAvg != null) g.lastCumAvg = r.cumAvg;      // 참고용 — 시트의 누적평균단가(사용량 미반영)
+      if (r.stock != null) g.lastStock = r.stock;                 // 시트의 재고수량 그대로
+      if (r.sheetAvg != null) g.lastAvg = r.sheetAvg;              // 시트의 잔여재고단가 그대로
     });
     const months = Object.keys(byYm).sort();
     if (months.length === 0) return;
@@ -694,10 +693,10 @@ function renderDashboard(){
     let baseAvg = null, prevAvg = null;
     const series = months.map(ym => {
       const g = byYm[ym];
-      const avg = g.lastPrice;
+      const avg = g.lastAvg;
       if (baseAvg === null) baseAvg = avg;
       const point = {
-        ym, avg, qty: g.qtySum, use: g.useSum, stock: g.lastStock, price: g.lastPrice, cumAvgRef: g.lastCumAvg,
+        ym, avg, qty: g.qtySum, use: g.useSum, stock: g.lastStock,
         vsBase: avg - baseAvg, vsPrev: prevAvg === null ? 0 : avg - prevAvg
       };
       prevAvg = avg;
@@ -706,14 +705,11 @@ function renderDashboard(){
 
     const latest = series[series.length - 1];
     const prev = series.length >= 2 ? series[series.length - 2] : null;
-    const lastRow = validRows[validRows.length - 1];
 
     const headline = {
       ym: latest.ym,
       avg: latest.avg,
-      cumAvgRef: latest.cumAvgRef,
       onHand: latest.stock,
-      latestPrice: latest.price,
       value: latest.stock != null ? latest.stock * latest.avg : null,
       qty: latest.qty,
       vsBase: latest.avg - series[0].avg,
@@ -761,7 +757,6 @@ function renderCards(models, grid){
         <td class="${trendClass(p.vsBase)}">${fmtSigned(p.vsBase)}</td>
         <td>${p.use ? p.use.toLocaleString()+'개' : '-'}</td>
         <td>${p.stock != null ? p.stock.toLocaleString()+'개' : '-'}</td>
-        <td>${p.cumAvgRef != null ? '$'+p.cumAvgRef.toFixed(2) : '-'}</td>
       </tr>`).join('');
 
     card.innerHTML = `
@@ -769,12 +764,12 @@ function renderCards(models, grid){
       <h2>${board}</h2>
       <div class="stat-grid">
         <div>
-          <div class="stat-label">단가 (${headline.ym} 기준)</div>
+          <div class="stat-label">평균단가 (${headline.ym})</div>
           <div class="stat-value">$${headline.avg.toFixed(2)}</div>
-          <div class="stat-sub">시트 누적평균(참고) $${headline.cumAvgRef != null ? headline.cumAvgRef.toFixed(2) : '-'}</div>
+          <div class="stat-sub">시트 계산값 그대로</div>
         </div>
         <div>
-          <div class="stat-label">현재 보유 재고 (${headline.ym})</div>
+          <div class="stat-label">보유 재고</div>
           <div class="stat-value">${headline.onHand != null ? headline.onHand.toLocaleString() : '-'}개</div>
           <div class="stat-sub">${headline.value != null ? '재고금액 약 $'+headline.value.toLocaleString(undefined,{maximumFractionDigits:0}) : ''}</div>
         </div>
@@ -787,7 +782,7 @@ function renderCards(models, grid){
       <details class="detail">
         <summary>월별 상세 보기 (${series.length}개월)</summary>
         <table class="detail-table">
-          <thead><tr><th>월</th><th>입고수량</th><th>단가</th><th>전월대비</th><th>최초대비</th><th>사용수량</th><th>재고수량</th><th>시트누적평균(참고)</th></tr></thead>
+          <thead><tr><th>월</th><th>입고수량</th><th>단가</th><th>전월대비</th><th>최초대비</th><th>사용수량</th><th>재고수량</th></tr></thead>
           <tbody>${rowsHtml}</tbody>
 
         </table>
@@ -825,7 +820,7 @@ function renderAllTable(models, wrap){
   const header = `
     <tr>
       <th>보드모델</th><th>카테고리</th><th>월</th><th>입고수량</th>
-      <th>단가</th><th>전월대비</th><th>최초대비</th><th>사용수량</th><th>재고수량</th><th>재고금액</th><th>시트누적평균(참고)</th>
+      <th>단가</th><th>전월대비</th><th>최초대비</th><th>사용수량</th><th>재고수량</th><th>재고금액</th>
     </tr>`;
   const rows = [];
   models.forEach(({board, category, series}) => {
@@ -843,7 +838,6 @@ function renderAllTable(models, wrap){
           <td>${p.use ? p.use.toLocaleString()+'개' : '-'}</td>
           <td>${p.stock != null ? p.stock.toLocaleString()+'개' : '-'}</td>
           <td>${value != null ? '$'+value.toLocaleString(undefined,{maximumFractionDigits:0}) : '-'}</td>
-          <td>${p.cumAvgRef != null ? '$'+p.cumAvgRef.toFixed(2) : '-'}</td>
         </tr>`);
     });
   });
