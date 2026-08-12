@@ -692,7 +692,13 @@ function renderDashboard(){
   const todayKey = now.getFullYear() * 100 + (now.getMonth() + 1); // 예: 2026년 8월 → 202608
   const models = [];
   const anomalies = [];
-  Object.keys(byBoard).sort().forEach(board => {
+  const boardCategory = {};
+  Object.keys(byBoard).forEach(b => { boardCategory[b] = byBoard[b][0].category || 'MB'; });
+  const sortedBoards = Object.keys(byBoard).sort((a,b) => {
+    const ca = boardCategory[a], cb = boardCategory[b];
+    return ca !== cb ? ca.localeCompare(cb) : a.localeCompare(b);
+  });
+  sortedBoards.forEach(board => {
     let validRows = byBoard[board].filter(r => (r.qty != null || r.price != null || r.use != null) && (r.resolvedYear * 100 + r.month) <= todayKey);
     validRows.sort((a,b) => {
       const ak = a.resolvedYear*100+a.month, bk = b.resolvedYear*100+b.month;
