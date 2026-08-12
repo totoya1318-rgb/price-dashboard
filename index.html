@@ -148,9 +148,9 @@
     display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
     margin: 4px 0 10px; padding: 12px; background: var(--line-soft); border-radius: 10px;
   }
-  .card .stat-grid .stat-label{ font-size: 10px; color: var(--sub); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
-  .card .stat-grid .stat-value{ font-family:'IBM Plex Mono', monospace; font-weight: 700; font-size: 18px; letter-spacing: -0.01em; }
-  .card .stat-grid .stat-sub{ font-size: 10.5px; color: var(--sub); margin-top: 2px; }
+  .card .stat-grid .stat-label{ font-size: 10px; color: var(--sub); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .stat-grid .stat-value{ font-family:'IBM Plex Mono', monospace; font-weight: 700; font-size: 18px; letter-spacing: -0.01em; white-space: nowrap; }
+  .card .stat-grid .stat-sub{ font-size: 10.5px; color: var(--sub); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .card .price{
     font-family:'IBM Plex Mono', monospace; font-weight: 600; font-size: 25px;
     letter-spacing: -0.01em;
@@ -186,18 +186,33 @@
   table.detail-table td.up{ color: var(--up); }
   table.detail-table td.down{ color: var(--down); }
 
-  .allTableWrap{ overflow-x:auto; background: var(--panel); border:1px solid var(--line); border-radius:14px; }
+  .allTableWrap{
+    overflow: auto; max-height: 72vh; background: var(--panel);
+    border:1px solid var(--line); border-radius:14px;
+  }
   table.all-table{ width:100%; border-collapse: collapse; font-size:12.5px; font-family:'IBM Plex Mono', monospace; }
   table.all-table th{
-    position: sticky; top:0; background: var(--panel);
-    text-align:right; color: var(--sub); padding: 9px 12px; border-bottom: 1px solid var(--line); white-space:nowrap;
+    position: sticky; top:0; background: var(--panel); z-index: 2;
+    text-align:right; color: var(--sub); padding: 9px 10px; border-bottom: 1px solid var(--line); white-space:nowrap;
   }
   table.all-table th:nth-child(1), table.all-table th:nth-child(2){ text-align:left; }
-  table.all-table td{ text-align:right; padding: 7px 12px; border-bottom: 1px solid var(--line-soft); white-space:nowrap; }
+  table.all-table td{ text-align:right; padding: 7px 10px; border-bottom: 1px solid var(--line-soft); white-space:nowrap; }
   table.all-table td:nth-child(1), table.all-table td:nth-child(2){ text-align:left; font-family:'Inter',sans-serif; }
+  table.all-table td:nth-child(1){
+    max-width: 150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  table.all-table td:nth-child(2){
+    max-width: 90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
   table.all-table td.up{ color: var(--up); font-weight:600; }
   table.all-table td.down{ color: var(--down); font-weight:600; }
   table.all-table tr:hover td{ background: var(--line-soft); }
+
+  .modelFilter{
+    font-family:'Inter', sans-serif; font-size: 13px; padding: 9px 12px;
+    border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+    max-width: 220px;
+  }
 
   .viewToggle{ display:flex; gap:6px; }
   .viewToggle button{
@@ -251,6 +266,9 @@
 
   <div class="controls" id="controls" style="display:none">
     <input type="text" id="search" placeholder="모델명으로 검색…">
+    <select class="modelFilter" id="modelFilter">
+      <option value="">전체 모델</option>
+    </select>
     <div class="viewToggle">
       <button id="viewCards" class="active">카드로 보기</button>
       <button id="viewTable">표로 보기</button>
@@ -315,6 +333,7 @@ const controls = document.getElementById('controls');
 const emptyState = document.getElementById('emptyState');
 const grid = document.getElementById('grid');
 const searchBox = document.getElementById('search');
+const modelFilter = document.getElementById('modelFilter');
 const baseYearInput = document.getElementById('baseYear');
 const meta = document.getElementById('meta');
 const diagbar = document.getElementById('diagbar');
@@ -366,6 +385,7 @@ dropzone.addEventListener('drop', e => {
 });
 fileInput.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
 searchBox.addEventListener('input', renderDashboard);
+modelFilter.addEventListener('change', renderDashboard);
 baseYearInput.addEventListener('change', () => { rebuildAndRender(); });
 
 document.getElementById('viewCards').addEventListener('click', () => setView('cards'));
@@ -645,10 +665,19 @@ function renderDashboard(){
   const resolved = assignYears(rawRecords, baseYear);
 
   const q = searchBox.value.trim().toLowerCase();
+  const selectedModel = modelFilter.value;
+
+  // 모델 드롭다운 옵션 채우기 (선택값 유지)
+  const allBoardNames = [...new Set(resolved.map(r => r.board))].sort();
+  const optionsHtml = '<option value="">전체 모델</option>' +
+    allBoardNames.map(b => `<option value="${b.replace(/"/g,'&quot;')}">${b}</option>`).join('');
+  if (modelFilter.innerHTML !== optionsHtml) modelFilter.innerHTML = optionsHtml;
+  modelFilter.value = selectedModel;
 
   const byBoard = {};
   resolved.forEach(r => {
     if (q && !r.board.toLowerCase().includes(q)) return;
+    if (selectedModel && r.board !== selectedModel) return;
     (byBoard[r.board] ||= []).push(r);
   });
 
@@ -774,9 +803,9 @@ function renderCards(models, grid){
       <h2>${board}</h2>
       <div class="stat-grid">
         <div>
-          <div class="stat-label">평균단가 (${headline.ym})</div>
+          <div class="stat-label">평균단가</div>
           <div class="stat-value">$${headline.avg.toFixed(2)}</div>
-          <div class="stat-sub">시트 계산값 그대로</div>
+          <div class="stat-sub">${headline.ym}</div>
         </div>
         <div>
           <div class="stat-label">보유 재고</div>
@@ -843,8 +872,8 @@ function renderAllTable(models, wrap){
       const value = p.stock != null ? p.stock * p.avg : null;
       rows.push(`
         <tr>
-          <td>${board}</td>
-          <td>${category}</td>
+          <td title="${board}">${board}</td>
+          <td title="${category}">${category}</td>
           <td>${p.ym}</td>
           <td>${p.qty.toLocaleString()}개</td>
           <td>$${p.avg.toFixed(2)}</td>
