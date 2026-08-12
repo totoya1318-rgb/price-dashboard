@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>단가 원장 — 평균재료비 대시보드</title>
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9zQYyAAAJ7ElEQVR4nO3df0zU9x3H8ddxouhxgHCeCMrZy2FRS6sDFYcaaRa7aNNi68zUSOxqWNIZsqTdYpYmZp2zNmmaDNvNdibGrE3rH1qbrZG1U2ysE8uGohRPhnLlh8cpx4+CgvzcH0uZhe/Bfe++Pz+8Hn/i3X0/4DNvP/c9vl8t0FFiScmInscn9XSVllr0OK5mB2W8pEXkqh6AEVMoasWtyosyZAqX0mEr+mIMmSKlVNiKvAhDJqVEG3ZMtAtgzKSkaHuKKmjGTGqIpquIxjtDJq3I3YLIntCMmbQktzdZQTNm0oOc7sIOmjGTnsLtL6ygGTMZQTgdTho0YyYjmazHqM9DExnJhEFzOpMRTdRlyKAZMxlZqD4lg2bMZAZSnXIPTUIZFzSnM5nJ2F45oUko3wua05nM6OFuOaFJKKNBczqTmX3XLyc0CYVBk1AsALcbJA5OaBIKgyahMGgSCoMmocTwDSGJhBOahMKgSSgMmoTCoEkoDJqEwqBJKAyahMKgSSgMmoTCoEkoDJqEwqBJKAyahMKgSSgMmoTCoEkoDJqEwqBJKAyahMKgSSgMmoTCoEko0/RegMi8r72G1MTEcV/fcvgw/nH9ug4rEh8nNAmFQavJYtF7BVMOg1YRc9Yeg1aRhRNacwxaRcxZewxaRZzQ2mPQKmLQ2mPQJBR+sKIAp92OVW43slJT4bTbkZqQAGdCApJmzpR8/Ae7d6OlsxPN7e1o7ujArbY2XPf7cd3vhy8YxPAIb9kdKQYdoTy3GztWrUK+xwO3wyHruTOmTYPb4ZB8Xt/AAKqbm1Hp86HS58NXDQ3wd3UptWzhWXgH//DFWCzYmZeHn69bhyVpaZodty4QwFmvF2e8XnxZX4/e/n7Njm02DDpMWampeHv7duS6XLqu4+3ycrx66pSuazAybjnC8EJ+Pg4+9xxmTOOPy+j4NzSJl9avx4HNm/VeBoWJp+0m8OOlS/H7wkK9l0EyMOgQkmbNQum2bfxwxGQYdAh7CgrgtNv1XgbJxD20hOlWK36Wny/7eYPDw/jb1asoq6mBt7UVx4uLMTchYdzjth85gtrbt5GWlIS0pCR45szBD1wu5LhcSLHZlPgWpiwGLWH9o48iWWZY3tZW7Dp6FN7W1tGvhfrEr39wEL5gEL5gcNyfuVJS8GRWFjZlZ2PdokWYbrXKW/wUx6AlrPF4ZD3+Tnc3nj50CG09PVEf+5tgEEcvXMDRCxdgj4vDhiVLULR6NdZlZnI/HwYGLUHup4ClZ84oEvNY3X19OFFVhRNVVch0OvHimjXo6u1V/DgiYdAS5s+eLevxlxoaVFrJ//3nzh3sPXlS9eOYHc9ySLDHxcl6/NDwsEorIbkYtITBoSFZj188b55KKyG5GLSE9nv3ZD3+hfx8vmEzCAYtISgz6FyXC288/zysMfxx6o1/AxJuPHQuOVzFa9fi3CuvYGtuLhJCXKlC6uNZDgnlN27gFwUFsp+XnZ6O93buxNDwMBra2pASH6/C6mgiDFrChZs30TcwgLjY2Iieb42JgcfpDPnnb23disuNjaj1+1HT0oKqxkZeZqUQXrESwv7CQuyJYEpH6nZnJ87X16Pc68VntbWy35jS/zDoEFJsNlTv24f4GTM0P/bg8DDO3biBYxcv4vS1axjkee6wMegJFC5bhqO7dul6Su6bYBAHy8rwUWUlRnh7g0nxLMcETl25glc/+UTXNbhSUvCnHTtwuqQErpQUXddiBgx6Eu+Ul2PPhx+ib2BA13Xkud0of/llLFuwQNd1GB2DDsP7FRVYffAg/v7117quI9lmw0fFxUhPStJ1HUbGPbRMKxYuxEvr1+Ppxx9HrE6/fF/d3IyCN9/kLcMkMOgIJdts2Lx8OTZlZyPf49H8nh0vHjuGE1VVmh7TDBi0AmZOn46VCxditduN5RkZeGLBAqRKXEuopLpAAKtef51nPsbgJ4UK6O3vxxd1dfiirm70a474eFzcuxdzVLpyfNHcuVialoaalhZVXt+sGLRK2np6Qn4gcrCsDF29vcjJyEBBVlbEV3qvy8xk0GMwaB38y+cb/Y83p1ut2LpiBX737LOYPWuWrNdZ4/Hgj+fOqbBC8+JpO531Dw3h/YoKbDp0CPdl3iY3Xea1j1MBgzaI2tu38efz52U9J1nmRJ8KGLSBlMn84EbuzXCmAgZtIC0dHbIez+sYx2PQEo4UFWFjdrbmx5X74UzPgwcqrcS8eJZDwmPp6diSk4Pq5mYcOnsWpy5f1uR3kpfKvGNTU3u7SisxL07oCTwxfz6OFBXh6r59+M3GjchITlb1eLvXrpX1+Ot+v0orMS9O6DCkJSXh1089hV9t2IB/Nzbir9XV+Ky2Ft7WVkU+eo61WrG/sFD2TSK/rK+P+tiiYdAyWCwW5LpcyHW58NtnnkFbTw8uNTSguqkJ11pa4AsG0djejnuT7G2tMTFIttngdjjwQ48HRXl5E15UK+XB4CBO19RE8+0IiUFHwREfj03Z2dg05g1k38AAOu/fD/l7HMeLi6M+9vHKSt6JVAKDVkFcbCxSExNVe/17Dx7gjbIy1V7fzPim0IT2njyJls5OvZdhSAzaZP5w5gz+UlGh9zIMi1sOkxgeGcH+Tz/FW59/rvdSDI1BS9j67rvYtnIlfrpiBR5xOPReDuoCAfzy+HH88+ZNvZdieLwEaxJ5bjd+kpODHy1erPl9MeoCAbxTXo4PLl3i3ZPCxKBlcDsceDIrCwVZWcjJyFDlTEZdIICzXi8+vnwZX/l8vGZQJgYdhWSbDUvmzcNj6enIdDqRmpiIOXY7nHY75sTHwxbivnh3u7sR+PZb3OnuRlNHB27dvYtavx9Xmppwt7tb4+9CLAxaRbcOHJD8neUthw+PXoJFyuJpOxVxUmiPQauI+1/tMWgSCoNWESe09hi0ipiz9hi0ijihtcegSSgMWkWcz9pj0GrilkNzDFpFzFl7/OibhMIJTUJh0CQUBk1CYdAkFAZNQmHQJBQGTUJh0CQUBk1CYdAkFAZNQmHQJBQGTUJh0CQUBk1CYdAkFAZNQmHQJBQGTUJh0CQUBk1CYdAkFAZNQmHQJJSYrtJSi96LIFIKJzQJhUGTUBg0CYVBk1BiAIBvDEkEXaWlFk5oEgqDJqGMBs1tB5nZd/1yQpNQvhc0pzSZ0cPdckKTUMYFzSlNZjK2V05oEopk0JzSZAZSnYac0IyajCxUnxNuORg1GdFEXXIPTUKZNGhOaTKSyXoMa0IzajKCcDoMe8vBqElP4fYnaw/NqEkPcrqT/aaQUZOW5PYWVZyJJSUj0TyfKJRIB2dUp+04rUkN0XQV9XloRk1KirYnRWPkFoQipdRgVGW6MmwKl9L/wqu6XWDYFIpaW1XN9r+Mm7R4v/VfO4nlHRnDa4QAAAAASUVORK5CYII=">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="단가원장">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f6e6e">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #f4f6f8;
+    --panel: #ffffff;
+    --ink: #10151f;
+    --sub: #5b6472;
+    --line: #dfe4ea;
+    --line-soft: #eceff3;
+    --brand: #0f6e6e;
+    --brand-ink: #0b5555;
+    --up: #c1443a;
+    --down: #2f6fb0;
+    --flat: #8a929e;
+    --warn-bg: #fff6e8;
+    --warn-ink: #8a5a11;
+    --warn-line: #f0d9ad;
+  }
+  * { box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, "Malgun Gothic", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap{ max-width: 1180px; margin: 0 auto; padding: 36px 28px 80px; }
+
+  /* header */
+  .topline{
+    display:flex; align-items:baseline; justify-content:space-between;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 18px; margin-bottom: 26px;
+    gap: 20px; flex-wrap: wrap;
+  }
+  .brandmark{ display:flex; align-items:baseline; gap:12px; }
+  .brandmark .tick{
+    font-family:'IBM Plex Mono', monospace; font-size: 12px; color: var(--brand);
+    border: 1px solid var(--brand); border-radius: 4px; padding: 2px 6px;
+    letter-spacing: 0.06em;
+  }
+  #installBtn{
+    font-family:'IBM Plex Mono', monospace; font-size: 12px; font-weight:600;
+    background: var(--brand); color:#fff; border:none; border-radius: 8px;
+    padding: 6px 12px; cursor:pointer; margin-left: 6px;
+  }
+  #installBtn:hover{ background: var(--brand-ink); }
+  h1{
+    font-family:'Space Grotesk', sans-serif; font-weight:700;
+    font-size: 26px; letter-spacing: -0.02em; margin: 0;
+  }
+  .topline p{ margin: 4px 0 0; color: var(--sub); font-size: 13.5px; }
+  #meta{ font-family:'IBM Plex Mono', monospace; font-size: 12px; color: var(--sub); text-align:right; }
+
+  /* upload */
+  .uploader{
+    background: var(--panel);
+    border: 1.5px dashed var(--line);
+    border-radius: 14px;
+    padding: 26px;
+    text-align: center;
+    margin-bottom: 22px;
+    transition: border-color .15s ease, background .15s ease;
+    cursor: pointer;
+  }
+  .uploader.drag{ border-color: var(--brand); background: #f2f9f8; }
+  .uploader .icon{
+    width: 38px; height: 38px; margin: 0 auto 10px;
+    border-radius: 10px; background: var(--brand); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600;
+  }
+  .uploader .title{ font-weight:600; font-size:15px; }
+  .uploader .sub{ color: var(--sub); font-size: 12.5px; margin-top:4px; }
+  .uploader input[type=file]{ display:none; }
+  .filepill{
+    display:inline-flex; align-items:center; gap:8px;
+    background: var(--line-soft); border-radius: 999px;
+    padding: 5px 12px; font-size: 12.5px; margin-top: 12px;
+    font-family:'IBM Plex Mono', monospace;
+  }
+
+  .controls{
+    display:flex; gap: 14px; align-items:center; flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .controls input[type=text]{
+    flex: 1; min-width: 220px;
+    padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line);
+    font-size: 14px; font-family: inherit; background: var(--panel);
+  }
+  .controls input[type=text]:focus{ outline: 2px solid var(--brand); outline-offset: 1px; }
+  .yearbox{
+    display:flex; align-items:center; gap: 8px;
+    font-size: 12.5px; color: var(--sub);
+  }
+  .yearbox input{
+    width: 76px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line);
+    font-family:'IBM Plex Mono', monospace; font-size: 13px;
+  }
+
+  .warnbar{
+    display:none;
+    background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-ink);
+    border-radius: 10px; padding: 12px 16px; font-size: 13px; margin-bottom: 18px;
+    line-height: 1.5;
+  }
+
+  .empty{
+    text-align:center; padding: 70px 20px; color: var(--sub);
+  }
+  .empty .big{ font-family:'Space Grotesk', sans-serif; font-size: 18px; color: var(--ink); margin-bottom: 6px; }
+
+  #grid{
+    display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+  }
+  .card{
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px 20px 16px;
+  }
+  .card .cat{
+    font-family:'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--brand-ink);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px;
+  }
+  .card h2{
+    font-family:'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600;
+    margin: 0 0 8px; line-height:1.3;
+  }
+  .card .price-row{ display:flex; align-items:baseline; gap:8px; }
+  .card .price{
+    font-family:'IBM Plex Mono', monospace; font-weight: 600; font-size: 25px;
+    letter-spacing: -0.01em;
+  }
+  .card .month-label{ font-size: 11.5px; color: var(--sub); }
+  .badges{ display:flex; gap:6px; margin: 8px 0 12px; flex-wrap: wrap; }
+  .badge{
+    font-family:'IBM Plex Mono', monospace; font-size: 11px; padding: 3px 8px;
+    border-radius: 6px; font-weight: 600; background: var(--line-soft); color: var(--sub);
+  }
+  .badge.up{ background:#fbebe9; color: var(--up); }
+  .badge.down{ background:#eaf2fa; color: var(--down); }
+  canvas{ max-height: 120px; }
+
+  details.detail{ margin-top: 10px; }
+  details.detail summary{
+    cursor:pointer; font-size: 12px; color: var(--brand-ink); font-weight:600;
+    list-style: none; user-select:none;
+  }
+  details.detail summary::-webkit-details-marker{ display:none; }
+  details.detail summary::before{ content: '▸ '; }
+  details.detail[open] summary::before{ content: '▾ '; }
+  table.detail-table{
+    width:100%; border-collapse: collapse; margin-top: 8px;
+    font-family:'IBM Plex Mono', monospace; font-size: 11px;
+  }
+  table.detail-table th{
+    text-align:right; color: var(--sub); font-weight:600; padding: 4px 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  table.detail-table th:first-child, table.detail-table td:first-child{ text-align:left; }
+  table.detail-table td{ text-align:right; padding: 4px 6px; border-bottom: 1px solid var(--line-soft); }
+  table.detail-table td.up{ color: var(--up); }
+  table.detail-table td.down{ color: var(--down); }
+
+  .allTableWrap{ overflow-x:auto; background: var(--panel); border:1px solid var(--line); border-radius:14px; }
+  table.all-table{ width:100%; border-collapse: collapse; font-size:12.5px; font-family:'IBM Plex Mono', monospace; }
+  table.all-table th{
+    position: sticky; top:0; background: var(--panel);
+    text-align:right; color: var(--sub); padding: 9px 12px; border-bottom: 1px solid var(--line); white-space:nowrap;
+  }
+  table.all-table th:nth-child(1), table.all-table th:nth-child(2){ text-align:left; }
+  table.all-table td{ text-align:right; padding: 7px 12px; border-bottom: 1px solid var(--line-soft); white-space:nowrap; }
+  table.all-table td:nth-child(1), table.all-table td:nth-child(2){ text-align:left; font-family:'Inter',sans-serif; }
+  table.all-table td.up{ color: var(--up); font-weight:600; }
+  table.all-table td.down{ color: var(--down); font-weight:600; }
+  table.all-table tr:hover td{ background: var(--line-soft); }
+
+  .viewToggle{ display:flex; gap:6px; }
+  .viewToggle button{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; padding: 8px 14px;
+    border-radius: 8px; border:1px solid var(--line); background: var(--panel); color: var(--sub); cursor:pointer;
+  }
+  .viewToggle button.active{ background: var(--brand); border-color: var(--brand); color:#fff; }
+
+  .clearlink{
+    font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--sub);
+    text-decoration: underline; cursor:pointer; margin-left: 10px;
+  }
+
+  body.public-mode .admin-only{ display:none !important; }
+
+  footer{
+    text-align:center; color: var(--sub); font-size: 11.5px; margin-top: 40px;
+  }
+</style>
+
+<link rel="manifest" href="manifest.json">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topline">
+    <div>
+      <div class="brandmark">
+        <span class="tick">LEDGER</span>
+        <h1>단가 원장 대시보드</h1>
+        <button id="installBtn" style="display:none" class="viewToggle-btn">앱 설치</button>
+      </div>
+      <p>엑셀 파일을 올리면 모델별 평균재료비와 인상 추이를 계산합니다. 파일은 서버로 전송되지 않고 이 브라우저 안에서만 계산됩니다.</p>
+      <p id="iosInstallHint" style="display:none; color:#0b5555; font-weight:600;">홈 화면에 앱처럼 추가하려면: 공유 버튼(⬆) → "홈 화면에 추가"를 눌러주세요.</p>
+    </div>
+    <div id="meta"></div>
+  </div>
+
+  <div class="uploader admin-only" id="dropzone">
+    <div class="icon">.xlsx</div>
+
+    <div class="title">엑셀(.xlsx/.xls) 또는 CSV 파일을 여기로 끌어다 놓거나 클릭해서 선택하세요</div>
+    <div class="sub">보드모델 / 입고일자(또는 입고날짜) / 입고수량 / 단가 / 사용수량 컬럼을 자동으로 인식합니다 · 시트가 여러 개면 모델·단가 컬럼이 있는 시트를 자동 선택합니다</div>
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+    <div id="filepill" style="display:none" class="filepill"></div>
+  </div>
+
+  <div class="warnbar" id="warnbar"></div>
+  <div class="warnbar admin-only" id="diagbar" style="display:block; font-family:'IBM Plex Mono',monospace; font-size:11.5px; background:#f1f2f4; border-color:#dfe4ea; color:#5b6472;">진단: 대기 중 — 파일을 업로드하면 이 자리에 처리 상태가 표시됩니다.</div>
+
+  <div class="controls" id="controls" style="display:none">
+    <input type="text" id="search" placeholder="모델명으로 검색…">
+    <div class="viewToggle">
+      <button id="viewCards" class="active">카드로 보기</button>
+      <button id="viewTable">표로 보기</button>
+    </div>
+    <div class="yearbox admin-only">
+      <span>월만 있고 연도가 없는 경우, 첫 데이터 연도</span>
+      <input type="number" id="baseYear" placeholder="예: 2025">
+    </div>
+  </div>
+
+  <div class="empty" id="emptyState">
+    <div class="big">아직 표시할 데이터가 없습니다</div>
+    <div id="emptyStateSub">데이터를 불러오는 중입니다…</div>
+  </div>
+
+  <div id="grid"></div>
+  <div class="allTableWrap" id="allTableWrap" style="display:none"></div>
+
+  <footer>이 저장소에 <code>data.xlsx</code>가 있으면 모든 기기에서 자동으로 같은 데이터를 봅니다. <span class="clearlink" id="refreshShared">새로고침</span><span class="admin-only"> · <span class="clearlink" id="clearData">저장된 데이터 지우기</span></span></footer>
+</div>
+
+<script>
+const ADMIN_MODE = new URLSearchParams(location.search).get('admin') === '1';
+if (!ADMIN_MODE) document.body.classList.add('public-mode');
+
+// 서비스워커 등록 (설치 가능하려면 브라우저 요건상 필요)
+if ('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{ /* file://나 미지원 환경은 무시 */ });
+}
+
+// 안드로이드 Chrome: "앱 설치" 버튼 — 브라우저가 설치 가능하다고 판단하면 자동으로 이벤트가 옴
+let deferredInstallPrompt = null;
+const installBtn = document.getElementById('installBtn');
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  installBtn.style.display = 'inline-block';
+});
+installBtn.addEventListener('click', async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  installBtn.style.display = 'none';
+});
+window.addEventListener('appinstalled', () => { installBtn.style.display = 'none'; });
+
+// iOS Safari는 beforeinstallprompt를 지원하지 않아 수동 안내를 보여줌
+(function(){
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  if (isIos && !isStandalone){
+    document.getElementById('iosInstallHint').style.display = 'block';
+  }
+})();
+
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const filepill = document.getElementById('filepill');
+const warnbar = document.getElementById('warnbar');
+const controls = document.getElementById('controls');
+const emptyState = document.getElementById('emptyState');
+const grid = document.getElementById('grid');
+const searchBox = document.getElementById('search');
+const baseYearInput = document.getElementById('baseYear');
+const meta = document.getElementById('meta');
+const diagbar = document.getElementById('diagbar');
+function diag(msg){
+  diagbar.style.display = 'block';
+  diagbar.textContent = '진단: ' + msg;
+}
+
+let rawRecords = [];   // {board, category, month(1-12), yearHint(or null), qty, price, use, rowOrder}
+let charts = [];
+let currentView = 'cards';
+const STORAGE_KEY = 'priceHistoryData';
+
+async function storageSet(key, value){
+  try{
+    if (window.storage && typeof window.storage.set === 'function'){
+      await window.storage.set(key, value, false);
+    } else {
+      localStorage.setItem(key, value);
+    }
+  }catch(err){ console.warn('storage set failed', err); }
+}
+async function storageGet(key){
+  try{
+    if (window.storage && typeof window.storage.get === 'function'){
+      const r = await window.storage.get(key, false);
+      return r ? r.value : null;
+    } else {
+      return localStorage.getItem(key);
+    }
+  }catch(err){ return null; }
+}
+async function storageDelete(key){
+  try{
+    if (window.storage && typeof window.storage.delete === 'function'){
+      await window.storage.delete(key, false);
+    } else {
+      localStorage.removeItem(key);
+    }
+  }catch(err){ console.warn('storage delete failed', err); }
+}
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('drag');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
+searchBox.addEventListener('input', renderDashboard);
+baseYearInput.addEventListener('change', () => { rebuildAndRender(); });
+
+document.getElementById('viewCards').addEventListener('click', () => setView('cards'));
+document.getElementById('viewTable').addEventListener('click', () => setView('table'));
+document.getElementById('clearData').addEventListener('click', async () => {
+  if (!confirm('저장된 데이터를 지우고 초기 화면으로 되돌릴까요?')) return;
+  await storageDelete(STORAGE_KEY);
+  rawRecords = [];
+  filepill.style.display = 'none';
+  controls.style.display = 'none';
+  grid.innerHTML = '';
+  document.getElementById('allTableWrap').style.display = 'none';
+  emptyState.style.display = 'block';
+  diag('저장된 데이터를 지웠습니다.');
+});
+document.getElementById('refreshShared').addEventListener('click', async () => {
+  diag('공유 데이터 파일(' + SHARED_DATA_FILE + ') 다시 확인 중…');
+  const ok = await tryLoadSharedFile();
+  if (!ok) diag('저장소에서 ' + SHARED_DATA_FILE + '을 찾지 못했습니다. 저장소에 그 이름으로 파일을 올려두면 모든 기기에서 자동으로 불러옵니다.');
+});
+
+function setView(view){
+  currentView = view;
+  document.getElementById('viewCards').classList.toggle('active', view === 'cards');
+  document.getElementById('viewTable').classList.toggle('active', view === 'table');
+  renderDashboard();
+}
+
+const SHARED_DATA_FILE = 'data.xlsx';
+
+async function tryLoadSharedFile(){
+  if (typeof XLSX === 'undefined') return false;
+  try{
+    const res = await fetch(SHARED_DATA_FILE + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return false;
+    const buf = await res.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    processWorkbook(wb, SHARED_DATA_FILE + ' (공유 데이터)', false);
+    diag('저장소의 공유 데이터 파일(' + SHARED_DATA_FILE + ')을 자동으로 불러왔습니다 · ' + rawRecords.length + '건');
+    return true;
+  }catch(err){
+    return false;
+  }
+}
+
+(async function init(){
+  // 1) 이 사이트(예: GitHub Pages) 같은 폴더에 data.xlsx가 있으면 그걸 최우선으로 사용합니다.
+  //    (모두가 같은 파일을 보게 되어, 기기마다 따로 업로드할 필요가 없습니다)
+  const loadedShared = await tryLoadSharedFile();
+  if (loadedShared) return;
+
+  // 2) 공유 파일이 없으면, 이 기기(브라우저)에 예전에 업로드해서 저장해둔 개인 데이터를 불러옵니다.
+  //    이 저장 데이터는 기기별로 따로 저장되어 다른 기기와 공유되지 않습니다.
+  const saved = await storageGet(STORAGE_KEY);
+  if (saved){
+    try{
+      const parsed = JSON.parse(saved);
+      if (parsed.records && parsed.records.length){
+        rawRecords = parsed.records;
+        filepill.style.display = 'inline-flex';
+        filepill.textContent = (parsed.fileName || '이전 업로드') + ' · ' + rawRecords.length + '건 (이 기기에 저장된 데이터 자동 복원)';
+        diag('이 기기에 저장된 데이터를 자동으로 불러왔습니다 (' + rawRecords.length + '건' + (parsed.savedAt ? ', ' + new Date(parsed.savedAt).toLocaleString('ko-KR') + ' 저장' : '') + ') · 공유 데이터 파일(' + SHARED_DATA_FILE + ')은 아직 저장소에 없습니다.');
+        rebuildAndRender();
+        return;
+      }
+    }catch(err){ console.warn('restore failed', err); }
+  }
+
+  // 3) 아무 데이터도 없는 상태
+  const sub = document.getElementById('emptyStateSub');
+  if (sub) sub.textContent = ADMIN_MODE
+    ? '위 영역에 단가 History 엑셀 파일을 올려주세요.'
+    : '데이터 담당자가 자료를 올리면 자동으로 표시됩니다.';
+})();
+
+function processWorkbook(wb, sourceName, persist){
+  if (!wb.SheetNames || wb.SheetNames.length === 0) throw new Error('시트를 찾을 수 없습니다');
+  let allRecords = [];
+  let lastHeaders = null;
+  const sheetReport = [];
+  for (const name of wb.SheetNames){
+    const ws = wb.Sheets[name];
+    const json = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
+    const { records, usedHeaders } = parseSheet(json, name, lastHeaders);
+    if (usedHeaders) lastHeaders = usedHeaders;
+    allRecords = allRecords.concat(records);
+    sheetReport.push(name + '(' + records.length + '건)');
+  }
+  rawRecords = allRecords;
+  diag('시트 ' + wb.SheetNames.length + '개 처리: ' + sheetReport.join(', '));
+  filepill.style.display = 'inline-flex';
+  filepill.textContent = sourceName + ' · ' + rawRecords.length + '건 인식됨';
+  if (rawRecords.length === 0){
+    diag('행은 읽었지만 인식된 데이터가 0건입니다 — 모든 시트에서 헤더(모델/보드 + 단가 포함 행)를 못 찾았습니다. 첫 시트 첫 5행: ' + JSON.stringify(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, raw:true, defval:null }).slice(0,5)));
+  } else if (persist){
+    storageSet(STORAGE_KEY, JSON.stringify({ savedAt: Date.now(), fileName: sourceName, records: rawRecords }));
+  }
+  rebuildAndRender();
+}
+
+function handleFile(file){
+  filepill.style.display = 'inline-flex';
+  filepill.textContent = file.name + ' 불러오는 중…';
+  diag('파일 선택됨 (' + file.name + ', ' + Math.round(file.size/1024) + 'KB) · 라이브러리 로드 여부: ' + (typeof XLSX !== 'undefined'));
+  if (typeof XLSX === 'undefined'){
+    filepill.textContent = '엑셀 처리 라이브러리를 불러오지 못했습니다 (인터넷 연결 또는 방화벽을 확인해주세요).';
+    diag('실패 — XLSX 라이브러리가 로드되지 않음 (CDN 차단 가능성)');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onerror = () => diag('실패 — 파일을 읽는 중 브라우저 오류 발생');
+  reader.onload = (e) => {
+    try{
+      const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+      processWorkbook(wb, file.name, true);
+    }catch(err){
+      filepill.textContent = '파일을 읽는 중 문제가 발생했습니다: ' + err.message;
+      diag('실패 — ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function pickBestSheet(wb){
+  // 헤더에 '모델' 또는 '단가'가 포함된 시트를 우선 선택
+  for (const name of wb.SheetNames){
+    const ws = wb.Sheets[name];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null }).slice(0, 6);
+    for (const row of rows){
+      const joined = (row || []).map(c => String(c ?? '')).join(' ');
+      if (joined.includes('모델') || joined.includes('단가') || joined.includes('보드')) return name;
+    }
+  }
+  return wb.SheetNames[0];
+}
+
+function normalizeHeader(h){ return String(h ?? '').replace(/\s|\(|\)|\$/g,'').trim(); }
+
+function detectHeader(json){
+  for (let i = 0; i < Math.min(json.length, 5); i++){
+    const row = json[i] || [];
+    const joined = row.map(c => String(c ?? '')).join(' ');
+    if (/모델|보드/.test(joined) && /단가/.test(joined)){
+      return { headerIdx: i, headers: row.map(normalizeHeader) };
+    }
+  }
+  return null;
+}
+
+function parseSheet(json, sheetName, fallbackHeaders){
+  // 헤더 행 찾기 (모델/보드/단가 텍스트가 포함된 첫 행). 없으면 같은 파일의 다른 시트에서
+  // 감지된 헤더 순서를 그대로 재사용 (예: 헤더 없이 데이터만 있는 시트)
+  const found = detectHeader(json);
+  let headerIdx, headers;
+  if (found){ headerIdx = found.headerIdx; headers = found.headers; }
+  else if (fallbackHeaders){ headerIdx = -1; headers = fallbackHeaders; }
+  else { return { records: [], usedHeaders: null }; }
+
+  const col = (patterns, exclude) => headers.findIndex(h =>
+    patterns.some(p => h.includes(p)) && !(exclude && exclude.some(x => h.includes(x))));
+  const cBoard = col(['모델명','보드모델','모델','보드']);
+  const cCategory = col(['카테고리','분류']);
+  const cQty = col(['입고수량']);
+  const cDate = col(['입고일자','입고날짜']);
+  const cPrice = col(['단가'], ['누적']);
+  const cCumAvg = col(['누적평균단가','누적단가']);
+  const cUse = col(['사용수량']);
+  const cStock = col(['재고수량','재고']);
+
+  const records = [];
+  for (let i = headerIdx + 1; i < json.length; i++){
+    const row = json[i] || [];
+    const board = row[cBoard];
+    if (!board) continue;
+    const priceRaw = row[cPrice];
+    if (priceRaw == null || String(priceRaw).includes('평균단가')) continue;
+
+    const dateRaw = cDate >= 0 ? row[cDate] : null;
+    let month = null, year = null, exactDate = null;
+    if (dateRaw instanceof Date){
+      exactDate = dateRaw; month = dateRaw.getMonth() + 1; year = dateRaw.getFullYear();
+    } else if (dateRaw != null){
+      const s = String(dateRaw);
+      const ym = s.match(/(\d{4})[.\-\/년]\s*(\d{1,2})/);
+      const mOnly = s.match(/(\d{1,2})\s*월/);
+      if (ym){ year = parseInt(ym[1]); month = parseInt(ym[2]); }
+      else if (mOnly){ month = parseInt(mOnly[1]); }
+    }
+    if (month == null) continue;
+
+    records.push({
+      board: String(board).trim(),
+      category: cCategory >= 0 ? row[cCategory] : sheetName,
+      month, year, exactDate,
+      qty: toNum(row[cQty]),
+      price: toNum(priceRaw),
+      cumAvg: cCumAvg >= 0 ? toNum(row[cCumAvg]) : null,
+      use: toNum(row[cUse]),
+      stock: cStock >= 0 ? toNum(row[cStock]) : null,
+      order: i
+    });
+  }
+  return { records, usedHeaders: headers };
+}
+
+function toNum(v){
+  if (v == null) return null;
+  if (typeof v === 'number') return v;
+  const s = String(v).replace(/[$,개\s]/g,'');
+  if (s === '' || s === '-') return null;
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+
+function rebuildAndRender(){
+  const needsYear = rawRecords.some(r => r.year == null && r.exactDate == null);
+  if (needsYear){
+    warnbar.style.display = 'block';
+    warnbar.textContent = '일부 데이터에 "월"만 있고 연도 정보가 없어, 위 "첫 데이터 연도" 값을 기준으로 순서대로 연도를 추정합니다. 실제 연도와 다를 수 있으니 중요한 의사결정 전에는 확인해주세요.';
+  } else {
+    warnbar.style.display = 'none';
+  }
+  controls.style.display = 'flex';
+  renderDashboard();
+}
+
+function assignYears(records, baseYear){
+  // 모델별로 원본 순서 유지, 월 텍스트만 있는 경우 rollover로 연도 추정
+  const byBoard = {};
+  records.forEach(r => { (byBoard[r.board] ||= []).push(r); });
+
+  const out = [];
+  Object.values(byBoard).forEach(list => {
+    list.sort((a,b) => a.order - b.order);
+    let curYear = baseYear, curMonth = null;
+    const seenYearForMonth = {};
+    list.forEach((r,i) => {
+      let y;
+      if (r.exactDate){ y = r.year; }
+      else if (r.year){ y = r.year; }
+      else {
+        if (curMonth == null){ y = curYear; }
+        else if (r.month === curMonth){ y = curYear; }
+        else if (r.month === curMonth + 1){ curMonth = r.month; y = curYear; }
+        else if (curMonth === 12 && r.month === 1){ curMonth = r.month; curYear += 1; y = curYear; }
+        else { y = seenYearForMonth[r.month] ?? curYear; }
+        seenYearForMonth[r.month] = y;
+        if (i === 0) curMonth = r.month;
+      }
+      out.push({ ...r, resolvedYear: y });
+    });
+  });
+  return out;
+}
+
+function renderDashboard(){
+  charts.forEach(c => c.destroy());
+  charts = [];
+  grid.innerHTML = '';
+  const allTableWrap = document.getElementById('allTableWrap');
+  allTableWrap.innerHTML = '';
+
+  if (rawRecords.length === 0){
+    emptyState.style.display = 'block';
+    grid.style.display = 'none';
+    allTableWrap.style.display = 'none';
+    return;
+  }
+  emptyState.style.display = 'none';
+
+  const baseYear = parseInt(baseYearInput.value) || new Date().getFullYear();
+  const resolved = assignYears(rawRecords, baseYear);
+
+  const q = searchBox.value.trim().toLowerCase();
+
+  const byBoard = {};
+  resolved.forEach(r => {
+    if (q && !r.board.toLowerCase().includes(q)) return;
+    (byBoard[r.board] ||= []).push(r);
+  });
+
+  meta.textContent = Object.keys(byBoard).length + '개 품목 · ' + resolved.length + '건';
+
+  // 모델별 월별 시리즈 계산 (카드 뷰/표 뷰 공통)
+  const models = [];
+  Object.keys(byBoard).sort().forEach(board => {
+    // 시트에 입력된 순서(= 누적평균단가 수식이 실제로 누적되는 순서) 그대로 사용.
+    const list = byBoard[board].slice().sort((a,b) => a.order - b.order);
+    const validRows = list.filter(r => r.price != null);
+
+    // "재고 기준 평균단가" — 이동평균법(moving average costing).
+    // 입고가 생기면 그 시점까지 남아있던 재고와 새 입고를 가중평균해서 평균단가를 갱신하고,
+    // 사용(출고)이 생기면 수량만 줄어들 뿐 평균단가는 바뀌지 않습니다.
+    // 그래서 예전에 싸게 사둔 재고가 다 소진되고 나면, 평균단가는 자연스럽게 최근 입고가로 수렴합니다.
+    // (반면 엑셀의 "누적평균단가"는 이미 소진된 재고까지 계속 포함해서 계산하는 값이라 서로 달라질 수 있습니다)
+    let onHandQty = 0, onHandAvg = 0;
+    validRows.forEach(r => {
+      const q = r.qty || 0;
+      if (q > 0){
+        onHandAvg = onHandQty > 0 ? (onHandQty * onHandAvg + q * r.price) / (onHandQty + q) : r.price;
+        onHandQty += q;
+      }
+      if (r.use){ onHandQty = Math.max(0, onHandQty - r.use); }
+      r.movingAvg = onHandAvg;
+      r.onHandQty = onHandQty;
+    });
+
+    const byYm = {};
+    validRows.forEach(r => {
+      const ym = r.resolvedYear + '-' + String(r.month).padStart(2,'0');
+      const g = (byYm[ym] ||= { qtySum: 0, useSum: 0, lastMovingAvg: null, lastCumAvg: null, lastStock: null, lastOnHand: null });
+      g.qtySum += r.qty || 0;
+      g.useSum += r.use || 0;
+      g.lastMovingAvg = r.movingAvg;   // 그 달 안에서 가장 마지막(입력 순서 기준) 재고기준 평균단가
+      if (r.cumAvg != null) g.lastCumAvg = r.cumAvg;
+      if (r.stock != null) g.lastStock = r.stock;
+      g.lastOnHand = r.onHandQty;
+    });
+    const months = Object.keys(byYm).sort();
+    if (months.length === 0) return;
+
+    let baseAvg = null, prevAvg = null;
+    const series = months.map(ym => {
+      const g = byYm[ym];
+      const avg = g.lastMovingAvg;
+      if (baseAvg === null) baseAvg = avg;
+      const point = {
+        ym, avg, qty: g.qtySum, use: g.useSum, stock: g.lastStock, onHand: g.lastOnHand, cumAvgRef: g.lastCumAvg,
+        vsBase: avg - baseAvg, vsPrev: prevAvg === null ? 0 : avg - prevAvg
+      };
+      prevAvg = avg;
+      return point;
+    });
+
+    // 헤드라인(카드 상단) 값 = 재고 기준 평균단가의 마지막(가장 최근 입력) 값
+    const lastRow = validRows[validRows.length - 1];
+    const secondLastRow = validRows[validRows.length - 2];
+    const headlineAvg = lastRow.movingAvg;
+    const prevEntryAvg = secondLastRow ? secondLastRow.movingAvg : null;
+    const headline = {
+      ym: lastRow.resolvedYear + '-' + String(lastRow.month).padStart(2,'0'),
+      avg: headlineAvg,
+      cumAvgRef: lastRow.cumAvg,
+      onHand: lastRow.onHandQty,
+      qty: lastRow.qty || 0,
+      stock: lastRow.stock,
+      vsBase: headlineAvg - series[0].avg,
+      vsPrevEntry: prevEntryAvg != null ? headlineAvg - prevEntryAvg : 0
+    };
+
+    models.push({ board, category: list[0].category || 'MB', series, headline });
+  });
+
+  if (currentView === 'table'){
+    grid.style.display = 'none';
+    allTableWrap.style.display = 'block';
+    renderAllTable(models, allTableWrap);
+  } else {
+    grid.style.display = 'grid';
+    allTableWrap.style.display = 'none';
+    renderCards(models, grid);
+  }
+}
+
+function fmtSigned(v){ const sign = v > 0 ? '+' : ''; return sign + '$' + v.toFixed(2); }
+function trendClass(v){ return v > 0 ? 'up' : (v < 0 ? 'down' : ''); }
+
+function renderCards(models, grid){
+  models.forEach(({board, category, series, headline}) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const badge = (label, v) => `<span class="badge ${trendClass(v)}">${label} ${fmtSigned(v)}</span>`;
+
+    const rowsHtml = series.map(p => `
+      <tr>
+        <td>${p.ym}</td>
+        <td>${p.qty.toLocaleString()}개</td>
+        <td>$${p.avg.toFixed(2)}</td>
+        <td class="${trendClass(p.vsPrev)}">${fmtSigned(p.vsPrev)}</td>
+        <td class="${trendClass(p.vsBase)}">${fmtSigned(p.vsBase)}</td>
+        <td>${p.use ? p.use.toLocaleString()+'개' : '-'}</td>
+        <td>${p.onHand != null ? p.onHand.toLocaleString()+'개' : '-'}</td>
+        <td>${p.cumAvgRef != null ? '$'+p.cumAvgRef.toFixed(2) : '-'}</td>
+      </tr>`).join('');
+
+    card.innerHTML = `
+      <div class="cat">${category}</div>
+      <h2>${board}</h2>
+      <div class="price-row">
+        <span class="price">$${headline.avg.toFixed(2)}</span>
+        <span class="month-label">재고 기준 평균단가 · 최근 입고(${headline.ym}) · 추정재고 ${headline.onHand.toLocaleString()}개</span>
+      </div>
+      <div class="badges">
+        ${badge('최초대비', headline.vsBase)}
+        ${badge('직전입고대비', headline.vsPrevEntry)}
+        <span class="badge">누적평균(참고) $${headline.cumAvgRef != null ? headline.cumAvgRef.toFixed(2) : '-'}</span>
+      </div>
+      <canvas></canvas>
+      <details class="detail">
+        <summary>월별 상세 보기 (${series.length}개월)</summary>
+        <table class="detail-table">
+          <thead><tr><th>월</th><th>입고수량</th><th>평균단가(재고기준)</th><th>전월대비</th><th>최초대비</th><th>사용수량</th><th>추정재고</th><th>누적평균(참고)</th></tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </details>
+    `;
+    grid.appendChild(card);
+
+    const ctx = card.querySelector('canvas').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: series.map(p => p.ym),
+        datasets: [{
+          data: series.map(p => p.avg),
+          borderColor: '#0f6e6e',
+          backgroundColor: 'rgba(15,110,110,0.08)',
+          borderWidth: 2, pointRadius: 2.5, pointBackgroundColor: '#0f6e6e',
+          fill: true, tension: 0.25
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display:false }, tooltip: { callbacks: { label: c => '$' + c.parsed.y.toFixed(2) } } },
+        scales: {
+          y: { ticks: { callback: v => '$' + v }, grace: '10%' },
+          x: { grid: { display:false }, ticks: { maxTicksLimit: 6, font: { size: 10 } } }
+        }
+      }
+    });
+    charts.push(chart);
+  });
+}
+
+function renderAllTable(models, wrap){
+  const header = `
+    <tr>
+      <th>보드모델</th><th>카테고리</th><th>월</th><th>입고수량</th>
+      <th>평균단가(재고기준)</th><th>전월대비</th><th>최초대비</th><th>사용수량</th><th>추정재고</th><th>누적평균(참고)</th>
+    </tr>`;
+  const rows = [];
+  models.forEach(({board, category, series}) => {
+    series.forEach(p => {
+      rows.push(`
+        <tr>
+          <td>${board}</td>
+          <td>${category}</td>
+          <td>${p.ym}</td>
+          <td>${p.qty.toLocaleString()}개</td>
+          <td>$${p.avg.toFixed(2)}</td>
+          <td class="${trendClass(p.vsPrev)}">${fmtSigned(p.vsPrev)}</td>
+          <td class="${trendClass(p.vsBase)}">${fmtSigned(p.vsBase)}</td>
+          <td>${p.use ? p.use.toLocaleString()+'개' : '-'}</td>
+          <td>${p.onHand != null ? p.onHand.toLocaleString()+'개' : '-'}</td>
+          <td>${p.cumAvgRef != null ? '$'+p.cumAvgRef.toFixed(2) : '-'}</td>
+        </tr>`);
+    });
+  });
+  wrap.innerHTML = `<table class="all-table"><thead>${header}</thead><tbody>${rows.join('')}</tbody></table>`;
+}
+</script>
+
+</body>
+</html>
