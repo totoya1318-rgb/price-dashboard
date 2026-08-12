@@ -55,6 +55,12 @@
     border: 1px solid var(--brand); border-radius: 4px; padding: 2px 6px;
     letter-spacing: 0.06em;
   }
+  #installBtn{
+    font-family:'IBM Plex Mono', monospace; font-size: 12px; font-weight:600;
+    background: var(--brand); color:#fff; border:none; border-radius: 8px;
+    padding: 6px 12px; cursor:pointer; margin-left: 6px;
+  }
+  #installBtn:hover{ background: var(--brand-ink); }
   h1{
     font-family:'Space Grotesk', sans-serif; font-weight:700;
     font-size: 26px; letter-spacing: -0.02em; margin: 0;
@@ -138,6 +144,13 @@
     margin: 0 0 8px; line-height:1.3;
   }
   .card .price-row{ display:flex; align-items:baseline; gap:8px; }
+  .card .stat-grid{
+    display:grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    margin: 4px 0 10px; padding: 12px; background: var(--line-soft); border-radius: 10px;
+  }
+  .card .stat-grid .stat-label{ font-size: 10.5px; color: var(--sub); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+  .card .stat-grid .stat-value{ font-family:'IBM Plex Mono', monospace; font-weight: 700; font-size: 21px; letter-spacing: -0.01em; }
+  .card .stat-grid .stat-sub{ font-size: 11px; color: var(--sub); margin-top: 2px; }
   .card .price{
     font-family:'IBM Plex Mono', monospace; font-weight: 600; font-size: 25px;
     letter-spacing: -0.01em;
@@ -198,32 +211,14 @@
     text-decoration: underline; cursor:pointer; margin-left: 10px;
   }
 
+  body.public-mode .admin-only{ display:none !important; }
+
   footer{
     text-align:center; color: var(--sub); font-size: 11.5px; margin-top: 40px;
   }
 </style>
 
-<script>
-(function(){
-  try{
-    var manifest = {
-      name: "단가 원장 대시보드",
-      short_name: "단가원장",
-      start_url: ".",
-      display: "standalone",
-      background_color: "#f4f6f8",
-      theme_color: "#0f6e6e",
-      icons: [{ src: "data:image/png;base64,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", sizes: "180x180", type: "image/png" }]
-    };
-    var blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
-    var url = URL.createObjectURL(blob);
-    var link = document.createElement('link');
-    link.rel = 'manifest';
-    link.href = url;
-    document.head.appendChild(link);
-  }catch(e){ /* file:// 로 직접 열었을 때는 무시 */ }
-})();
-</script>
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
 <div class="wrap">
@@ -233,14 +228,17 @@
       <div class="brandmark">
         <span class="tick">LEDGER</span>
         <h1>단가 원장 대시보드</h1>
+        <button id="installBtn" style="display:none" class="viewToggle-btn">앱 설치</button>
       </div>
       <p>엑셀 파일을 올리면 모델별 평균재료비와 인상 추이를 계산합니다. 파일은 서버로 전송되지 않고 이 브라우저 안에서만 계산됩니다.</p>
+      <p id="iosInstallHint" style="display:none; color:#0b5555; font-weight:600;">홈 화면에 앱처럼 추가하려면: 공유 버튼(⬆) → "홈 화면에 추가"를 눌러주세요.</p>
     </div>
     <div id="meta"></div>
   </div>
 
-  <div class="uploader" id="dropzone">
+  <div class="uploader admin-only" id="dropzone">
     <div class="icon">.xlsx</div>
+
     <div class="title">엑셀(.xlsx/.xls) 또는 CSV 파일을 여기로 끌어다 놓거나 클릭해서 선택하세요</div>
     <div class="sub">보드모델 / 입고일자(또는 입고날짜) / 입고수량 / 단가 / 사용수량 컬럼을 자동으로 인식합니다 · 시트가 여러 개면 모델·단가 컬럼이 있는 시트를 자동 선택합니다</div>
     <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
@@ -248,7 +246,8 @@
   </div>
 
   <div class="warnbar" id="warnbar"></div>
-  <div class="warnbar" id="diagbar" style="display:block; font-family:'IBM Plex Mono',monospace; font-size:11.5px; background:#f1f2f4; border-color:#dfe4ea; color:#5b6472;">진단: 대기 중 — 파일을 업로드하면 이 자리에 처리 상태가 표시됩니다.</div>
+  <div class="warnbar admin-only" id="anomalyBar" style="display:none; background:#fff6e8; border-color:#f0d9ad; color:#8a5a11;"></div>
+  <div class="warnbar admin-only" id="diagbar" style="display:block; font-family:'IBM Plex Mono',monospace; font-size:11.5px; background:#f1f2f4; border-color:#dfe4ea; color:#5b6472;">진단: 대기 중 — 파일을 업로드하면 이 자리에 처리 상태가 표시됩니다.</div>
 
   <div class="controls" id="controls" style="display:none">
     <input type="text" id="search" placeholder="모델명으로 검색…">
@@ -256,24 +255,58 @@
       <button id="viewCards" class="active">카드로 보기</button>
       <button id="viewTable">표로 보기</button>
     </div>
-    <div class="yearbox">
+    <div class="yearbox admin-only">
       <span>월만 있고 연도가 없는 경우, 첫 데이터 연도</span>
       <input type="number" id="baseYear" placeholder="예: 2025">
     </div>
   </div>
 
   <div class="empty" id="emptyState">
-    <div class="big">아직 업로드된 파일이 없습니다</div>
-    <div>위 영역에 단가 History 엑셀 파일을 올려주세요.</div>
+    <div class="big">아직 표시할 데이터가 없습니다</div>
+    <div id="emptyStateSub">데이터를 불러오는 중입니다…</div>
   </div>
 
   <div id="grid"></div>
   <div class="allTableWrap" id="allTableWrap" style="display:none"></div>
 
-  <footer>이 저장소에 <code>data.xlsx</code>가 있으면 모든 기기에서 자동으로 같은 데이터를 봅니다. 없을 때는 업로드한 파일이 이 기기(이 브라우저)에만 저장됩니다 — 어떤 데이터도 외부 서버로 전송되지 않습니다. <span class="clearlink" id="refreshShared">공유 데이터 새로고침</span> · <span class="clearlink" id="clearData">저장된 데이터 지우기</span></footer>
+  <footer>이 저장소에 <code>data.xlsx</code>가 있으면 모든 기기에서 자동으로 같은 데이터를 봅니다. <span class="clearlink" id="refreshShared">새로고침</span><span class="admin-only"> · <span class="clearlink" id="clearData">저장된 데이터 지우기</span></span></footer>
 </div>
 
 <script>
+const ADMIN_MODE = new URLSearchParams(location.search).get('admin') === '1';
+if (!ADMIN_MODE) document.body.classList.add('public-mode');
+
+// 서비스워커 등록 (설치 가능하려면 브라우저 요건상 필요)
+if ('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{ /* file://나 미지원 환경은 무시 */ });
+}
+
+// 안드로이드 Chrome: "앱 설치" 버튼 — 브라우저가 설치 가능하다고 판단하면 자동으로 이벤트가 옴
+let deferredInstallPrompt = null;
+const installBtn = document.getElementById('installBtn');
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  installBtn.style.display = 'inline-block';
+});
+installBtn.addEventListener('click', async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  installBtn.style.display = 'none';
+});
+window.addEventListener('appinstalled', () => { installBtn.style.display = 'none'; });
+
+// iOS Safari는 beforeinstallprompt를 지원하지 않아 수동 안내를 보여줌
+(function(){
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  if (isIos && !isStandalone){
+    document.getElementById('iosInstallHint').style.display = 'block';
+  }
+})();
+
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
 const filepill = document.getElementById('filepill');
@@ -387,17 +420,25 @@ async function tryLoadSharedFile(){
   // 2) 공유 파일이 없으면, 이 기기(브라우저)에 예전에 업로드해서 저장해둔 개인 데이터를 불러옵니다.
   //    이 저장 데이터는 기기별로 따로 저장되어 다른 기기와 공유되지 않습니다.
   const saved = await storageGet(STORAGE_KEY);
-  if (!saved) return;
-  try{
-    const parsed = JSON.parse(saved);
-    if (parsed.records && parsed.records.length){
-      rawRecords = parsed.records;
-      filepill.style.display = 'inline-flex';
-      filepill.textContent = (parsed.fileName || '이전 업로드') + ' · ' + rawRecords.length + '건 (이 기기에 저장된 데이터 자동 복원)';
-      diag('이 기기에 저장된 데이터를 자동으로 불러왔습니다 (' + rawRecords.length + '건' + (parsed.savedAt ? ', ' + new Date(parsed.savedAt).toLocaleString('ko-KR') + ' 저장' : '') + ') · 공유 데이터 파일(' + SHARED_DATA_FILE + ')은 아직 저장소에 없습니다.');
-      rebuildAndRender();
-    }
-  }catch(err){ console.warn('restore failed', err); }
+  if (saved){
+    try{
+      const parsed = JSON.parse(saved);
+      if (parsed.records && parsed.records.length){
+        rawRecords = parsed.records;
+        filepill.style.display = 'inline-flex';
+        filepill.textContent = (parsed.fileName || '이전 업로드') + ' · ' + rawRecords.length + '건 (이 기기에 저장된 데이터 자동 복원)';
+        diag('이 기기에 저장된 데이터를 자동으로 불러왔습니다 (' + rawRecords.length + '건' + (parsed.savedAt ? ', ' + new Date(parsed.savedAt).toLocaleString('ko-KR') + ' 저장' : '') + ') · 공유 데이터 파일(' + SHARED_DATA_FILE + ')은 아직 저장소에 없습니다.');
+        rebuildAndRender();
+        return;
+      }
+    }catch(err){ console.warn('restore failed', err); }
+  }
+
+  // 3) 아무 데이터도 없는 상태
+  const sub = document.getElementById('emptyStateSub');
+  if (sub) sub.textContent = ADMIN_MODE
+    ? '위 영역에 단가 History 엑셀 파일을 올려주세요.'
+    : '데이터 담당자가 자료를 올리면 자동으로 표시됩니다.';
 })();
 
 function processWorkbook(wb, sourceName, persist){
@@ -609,39 +650,43 @@ function renderDashboard(){
   meta.textContent = Object.keys(byBoard).length + '개 품목 · ' + resolved.length + '건';
 
   // 모델별 월별 시리즈 계산 (카드 뷰/표 뷰 공통)
+  //
+  // 중요: 이 시트의 "입고수량"은 순수 신규입고가 아니라, 전월 남은 재고를 그대로
+  // 다음 달 입고수량으로 이월 기재하는 방식입니다 (예: 10월 재고 150개 → 11월 입고 150개로
+  // 그대로 이어짐). 즉 각 행의 입고수량 자체가 이미 "이월재고 + 신규입고"를 담고 있어서,
+  // 이걸 매번 새로 더해나가는 이동평균 계산을 하면 이월분이 중복으로 계속 쌓입니다.
+  // 그래서 재고수량·단가는 자체 계산하지 않고, 시트에 이미 있는 그 달의 값을 그대로 읽습니다
+  // (재고수량 = 그 행의 입고수량 - 사용수량, 이미 시트 수식이 정확히 계산해둔 값).
+  const now = new Date();
+  const todayKey = now.getFullYear() * 100 + (now.getMonth() + 1); // 예: 2026년 8월 → 202608
   const models = [];
+  const anomalies = [];
   Object.keys(byBoard).sort().forEach(board => {
-    // 시트에 입력된 순서(= 누적평균단가 수식이 실제로 누적되는 순서) 그대로 사용.
-    const list = byBoard[board].slice().sort((a,b) => a.order - b.order);
-    const validRows = list.filter(r => r.price != null);
+    let validRows = byBoard[board].filter(r => r.price != null && (r.resolvedYear * 100 + r.month) <= todayKey);
+    validRows.sort((a,b) => {
+      const ak = a.resolvedYear*100+a.month, bk = b.resolvedYear*100+b.month;
+      return ak !== bk ? ak - bk : a.order - b.order;
+    });
+    if (validRows.length === 0) return;
 
-    // "재고 기준 평균단가" — 이동평균법(moving average costing).
-    // 입고가 생기면 그 시점까지 남아있던 재고와 새 입고를 가중평균해서 평균단가를 갱신하고,
-    // 사용(출고)이 생기면 수량만 줄어들 뿐 평균단가는 바뀌지 않습니다.
-    // 그래서 예전에 싸게 사둔 재고가 다 소진되고 나면, 평균단가는 자연스럽게 최근 입고가로 수렴합니다.
-    // (반면 엑셀의 "누적평균단가"는 이미 소진된 재고까지 계속 포함해서 계산하는 값이라 서로 달라질 수 있습니다)
-    let onHandQty = 0, onHandAvg = 0;
+    // 입고수량이 음수인 행(물리적으로 불가능 — 테스트/오입력으로 추정)은 이상치로 표시만 하고
+    // 월별 집계(입고수량 합계)에서는 제외합니다.
     validRows.forEach(r => {
-      const q = r.qty || 0;
-      if (q > 0){
-        onHandAvg = onHandQty > 0 ? (onHandQty * onHandAvg + q * r.price) / (onHandQty + q) : r.price;
-        onHandQty += q;
+      if ((r.qty || 0) < 0){
+        r.excluded = true;
+        anomalies.push({ board, ym: r.resolvedYear + '-' + String(r.month).padStart(2,'0'), qty: r.qty, price: r.price });
       }
-      if (r.use){ onHandQty = Math.max(0, onHandQty - r.use); }
-      r.movingAvg = onHandAvg;
-      r.onHandQty = onHandQty;
     });
 
     const byYm = {};
     validRows.forEach(r => {
       const ym = r.resolvedYear + '-' + String(r.month).padStart(2,'0');
-      const g = (byYm[ym] ||= { qtySum: 0, useSum: 0, lastMovingAvg: null, lastCumAvg: null, lastStock: null, lastOnHand: null });
-      g.qtySum += r.qty || 0;
+      const g = (byYm[ym] ||= { qtySum: 0, useSum: 0, lastStock: null, lastPrice: null, lastCumAvg: null, monthKey: r.resolvedYear*100+r.month });
+      if (!r.excluded) g.qtySum += r.qty || 0;
       g.useSum += r.use || 0;
-      g.lastMovingAvg = r.movingAvg;   // 그 달 안에서 가장 마지막(입력 순서 기준) 재고기준 평균단가
-      if (r.cumAvg != null) g.lastCumAvg = r.cumAvg;
-      if (r.stock != null) g.lastStock = r.stock;
-      g.lastOnHand = r.onHandQty;
+      if (r.stock != null) g.lastStock = r.stock;       // 그 달 마지막(입력순서 기준) 재고수량 — 시트 값 그대로
+      if (!r.excluded) g.lastPrice = r.price;             // 그 달 마지막 입고단가 — 시트 값 그대로
+      if (r.cumAvg != null) g.lastCumAvg = r.cumAvg;      // 참고용 — 시트의 누적평균단가(사용량 미반영)
     });
     const months = Object.keys(byYm).sort();
     if (months.length === 0) return;
@@ -649,34 +694,43 @@ function renderDashboard(){
     let baseAvg = null, prevAvg = null;
     const series = months.map(ym => {
       const g = byYm[ym];
-      const avg = g.lastMovingAvg;
+      const avg = g.lastPrice;
       if (baseAvg === null) baseAvg = avg;
       const point = {
-        ym, avg, qty: g.qtySum, use: g.useSum, stock: g.lastStock, onHand: g.lastOnHand, cumAvgRef: g.lastCumAvg,
+        ym, avg, qty: g.qtySum, use: g.useSum, stock: g.lastStock, price: g.lastPrice, cumAvgRef: g.lastCumAvg,
         vsBase: avg - baseAvg, vsPrev: prevAvg === null ? 0 : avg - prevAvg
       };
       prevAvg = avg;
       return point;
     });
 
-    // 헤드라인(카드 상단) 값 = 재고 기준 평균단가의 마지막(가장 최근 입력) 값
+    const latest = series[series.length - 1];
+    const prev = series.length >= 2 ? series[series.length - 2] : null;
     const lastRow = validRows[validRows.length - 1];
-    const secondLastRow = validRows[validRows.length - 2];
-    const headlineAvg = lastRow.movingAvg;
-    const prevEntryAvg = secondLastRow ? secondLastRow.movingAvg : null;
+
     const headline = {
-      ym: lastRow.resolvedYear + '-' + String(lastRow.month).padStart(2,'0'),
-      avg: headlineAvg,
-      cumAvgRef: lastRow.cumAvg,
-      onHand: lastRow.onHandQty,
-      qty: lastRow.qty || 0,
-      stock: lastRow.stock,
-      vsBase: headlineAvg - series[0].avg,
-      vsPrevEntry: prevEntryAvg != null ? headlineAvg - prevEntryAvg : 0
+      ym: latest.ym,
+      avg: latest.avg,
+      cumAvgRef: latest.cumAvgRef,
+      onHand: latest.stock,
+      latestPrice: latest.price,
+      value: latest.stock != null ? latest.stock * latest.avg : null,
+      qty: latest.qty,
+      vsBase: latest.avg - series[0].avg,
+      vsPrevEntry: prev ? latest.avg - prev.avg : 0
     };
 
-    models.push({ board, category: list[0].category || 'MB', series, headline });
+    models.push({ board, category: byBoard[board][0].category || 'MB', series, headline });
   });
+
+  const anomalyBar = document.getElementById('anomalyBar');
+  if (anomalies.length > 0){
+    anomalyBar.style.display = 'block';
+    anomalyBar.innerHTML = '⚠ 입고수량이 음수인 이상치 ' + anomalies.length + '건을 계산에서 자동 제외했습니다 (계산에는 영향 없음, 원본 시트 확인 권장): ' +
+      anomalies.map(a => `${a.board} · ${a.ym} · ${a.qty.toLocaleString()}개 @ $${a.price.toFixed(2)}`).join(' / ');
+  } else {
+    anomalyBar.style.display = 'none';
+  }
 
   if (currentView === 'table'){
     grid.style.display = 'none';
@@ -706,28 +760,36 @@ function renderCards(models, grid){
         <td class="${trendClass(p.vsPrev)}">${fmtSigned(p.vsPrev)}</td>
         <td class="${trendClass(p.vsBase)}">${fmtSigned(p.vsBase)}</td>
         <td>${p.use ? p.use.toLocaleString()+'개' : '-'}</td>
-        <td>${p.onHand != null ? p.onHand.toLocaleString()+'개' : '-'}</td>
+        <td>${p.stock != null ? p.stock.toLocaleString()+'개' : '-'}</td>
         <td>${p.cumAvgRef != null ? '$'+p.cumAvgRef.toFixed(2) : '-'}</td>
       </tr>`).join('');
 
     card.innerHTML = `
       <div class="cat">${category}</div>
       <h2>${board}</h2>
-      <div class="price-row">
-        <span class="price">$${headline.avg.toFixed(2)}</span>
-        <span class="month-label">재고 기준 평균단가 · 최근 입고(${headline.ym}) · 추정재고 ${headline.onHand.toLocaleString()}개</span>
+      <div class="stat-grid">
+        <div>
+          <div class="stat-label">단가 (${headline.ym} 기준)</div>
+          <div class="stat-value">$${headline.avg.toFixed(2)}</div>
+          <div class="stat-sub">시트 누적평균(참고) $${headline.cumAvgRef != null ? headline.cumAvgRef.toFixed(2) : '-'}</div>
+        </div>
+        <div>
+          <div class="stat-label">현재 보유 재고 (${headline.ym})</div>
+          <div class="stat-value">${headline.onHand != null ? headline.onHand.toLocaleString() : '-'}개</div>
+          <div class="stat-sub">${headline.value != null ? '재고금액 약 $'+headline.value.toLocaleString(undefined,{maximumFractionDigits:0}) : ''}</div>
+        </div>
       </div>
       <div class="badges">
         ${badge('최초대비', headline.vsBase)}
-        ${badge('직전입고대비', headline.vsPrevEntry)}
-        <span class="badge">누적평균(참고) $${headline.cumAvgRef != null ? headline.cumAvgRef.toFixed(2) : '-'}</span>
+        ${badge('전월대비', headline.vsPrevEntry)}
       </div>
       <canvas></canvas>
       <details class="detail">
         <summary>월별 상세 보기 (${series.length}개월)</summary>
         <table class="detail-table">
-          <thead><tr><th>월</th><th>입고수량</th><th>평균단가(재고기준)</th><th>전월대비</th><th>최초대비</th><th>사용수량</th><th>추정재고</th><th>누적평균(참고)</th></tr></thead>
+          <thead><tr><th>월</th><th>입고수량</th><th>단가</th><th>전월대비</th><th>최초대비</th><th>사용수량</th><th>재고수량</th><th>시트누적평균(참고)</th></tr></thead>
           <tbody>${rowsHtml}</tbody>
+
         </table>
       </details>
     `;
@@ -763,11 +825,12 @@ function renderAllTable(models, wrap){
   const header = `
     <tr>
       <th>보드모델</th><th>카테고리</th><th>월</th><th>입고수량</th>
-      <th>평균단가(재고기준)</th><th>전월대비</th><th>최초대비</th><th>사용수량</th><th>추정재고</th><th>누적평균(참고)</th>
+      <th>단가</th><th>전월대비</th><th>최초대비</th><th>사용수량</th><th>재고수량</th><th>재고금액</th><th>시트누적평균(참고)</th>
     </tr>`;
   const rows = [];
   models.forEach(({board, category, series}) => {
     series.forEach(p => {
+      const value = p.stock != null ? p.stock * p.avg : null;
       rows.push(`
         <tr>
           <td>${board}</td>
@@ -778,7 +841,8 @@ function renderAllTable(models, wrap){
           <td class="${trendClass(p.vsPrev)}">${fmtSigned(p.vsPrev)}</td>
           <td class="${trendClass(p.vsBase)}">${fmtSigned(p.vsBase)}</td>
           <td>${p.use ? p.use.toLocaleString()+'개' : '-'}</td>
-          <td>${p.onHand != null ? p.onHand.toLocaleString()+'개' : '-'}</td>
+          <td>${p.stock != null ? p.stock.toLocaleString()+'개' : '-'}</td>
+          <td>${value != null ? '$'+value.toLocaleString(undefined,{maximumFractionDigits:0}) : '-'}</td>
           <td>${p.cumAvgRef != null ? '$'+p.cumAvgRef.toFixed(2) : '-'}</td>
         </tr>`);
     });
