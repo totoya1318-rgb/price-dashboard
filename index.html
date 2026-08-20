@@ -504,7 +504,7 @@ async function tryLoadSharedFile(){
       const res = await fetch(name + '?t=' + Date.now(), { cache: 'no-store' });
       if (!res.ok) continue;
       const buf = await res.arrayBuffer();
-      const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+      const wb = XLSX.read(buf, { type: 'array' });
       processWorkbook(wb, name + ' (공유 데이터)', false);
       diag('저장소의 공유 데이터 파일(' + name + ')을 자동으로 불러왔습니다 · ' + rawRecords.length + '건');
       return true;
@@ -562,7 +562,8 @@ function parseUsageSheet(json){
     const model = row[cModel];
     if (!model) continue;
     let ym = row[cYm];
-    if (ym instanceof Date){ ym = ym.getFullYear() + '-' + String(ym.getMonth()+1).padStart(2,'0'); }
+    const parsedYm = readDateCell(ym);
+    if (parsedYm){ ym = parsedYm.getUTCFullYear() + '-' + String(parsedYm.getUTCMonth()+1).padStart(2,'0'); }
     else if (ym != null){
       const m = String(ym).match(/(\d{4})\D+(\d{1,2})/);
       if (m) ym = m[1] + '-' + m[2].padStart(2,'0');
@@ -625,7 +626,7 @@ function handleFile(file){
   reader.onerror = () => diag('실패 — 파일을 읽는 중 브라우저 오류 발생');
   reader.onload = (e) => {
     try{
-      const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+      const wb = XLSX.read(e.target.result, { type: 'array' });
       processWorkbook(wb, file.name, true);
     }catch(err){
       filepill.textContent = '파일을 읽는 중 문제가 발생했습니다: ' + err.message;
@@ -649,6 +650,27 @@ function pickBestSheet(wb){
 }
 
 function normalizeHeader(h){ return String(h ?? '').replace(/\s|\(|\)|\$/g,'').trim(); }
+
+// 엑셀 날짜 일련번호를 UTC 자정 기준 Date로 직접 변환합니다 (라이브러리의 자동 cellDates
+// 변환에 의존하지 않음 — 파일을 만든 도구에 따라 자정이 아닌 어중간한 시각으로 변환되면서
+// 시간대 계산 중에 날짜가 하루 밀리는 문제가 있었습니다. 엑셀의 1900년 윤년 버그를 그대로
+// 반영하는 표준 공식을 사용해 항상 정확한 달력 날짜를 UTC 자정으로 고정합니다.)
+function excelSerialToUTCDate(serial){
+  const days = Math.round(serial); // 시간 부분은 버리고 "그 날짜"만 사용
+  const ms = (days - 25569) * 86400 * 1000; // 25569 = 1899-12-30 ~ 1970-01-01 사이 일수
+  return new Date(ms);
+}
+function readDateCell(v){
+  if (v == null) return null;
+  if (typeof v === 'number') return excelSerialToUTCDate(v);
+  if (v instanceof Date){
+    // 혹시 라이브러리가 이미 Date로 변환해 넘겨준 경우에도, 로컬(자정 아닌) 시각으로
+    // 왜곡되어 있을 수 있으므로 UTC 달력 날짜만 신뢰해서 다시 자정으로 고정합니다.
+    return new Date(Date.UTC(v.getUTCFullYear(), v.getUTCMonth(), v.getUTCDate()));
+  }
+  return null;
+}
+
 
 function detectHeader(json){
   for (let i = 0; i < Math.min(json.length, 5); i++){
@@ -694,8 +716,9 @@ function parseSheet(json, sheetName, fallbackHeaders){
 
     const dateRaw = cDate >= 0 ? row[cDate] : null;
     let month = null, year = null, exactDate = null;
-    if (dateRaw instanceof Date){
-      exactDate = dateRaw; month = dateRaw.getMonth() + 1; year = dateRaw.getFullYear();
+    const parsedDate = readDateCell(dateRaw);
+    if (parsedDate){
+      exactDate = parsedDate; month = parsedDate.getUTCMonth() + 1; year = parsedDate.getUTCFullYear();
     } else if (dateRaw != null){
       const s = String(dateRaw);
       const ym = s.match(/(\d{4})[.\-\/년]\s*(\d{1,2})/);
