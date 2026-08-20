@@ -42,6 +42,29 @@
   }
   .wrap{ max-width: 1180px; margin: 0 auto; padding: 36px 28px 80px; }
 
+  #pwGate{
+    position: fixed; inset: 0; background: var(--bg); z-index: 999;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #pwGate .box{
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    padding: 32px 28px; width: 100%; max-width: 320px; text-align: center;
+  }
+  #pwGate .tick{ display:inline-block; margin-bottom: 10px; }
+  #pwGate h2{ font-family:'Space Grotesk', sans-serif; font-size: 18px; margin: 0 0 4px; }
+  #pwGate p{ color: var(--sub); font-size: 12.5px; margin: 0 0 16px; }
+  #pwGate input{
+    width: 100%; padding: 11px 12px; border-radius: 9px; border: 1px solid var(--line);
+    font-size: 14px; font-family: inherit; text-align: center; margin-bottom: 10px;
+  }
+  #pwGate button{
+    width: 100%; padding: 11px; border-radius: 9px; border: none;
+    background: var(--brand); color: #fff; font-weight: 600; font-size: 14px; cursor: pointer;
+  }
+  #pwGate button:hover{ background: var(--brand-ink); }
+  #pwGate .err{ color: var(--up); font-size: 12px; margin-top: 8px; display: none; }
+  body.locked #appContent{ display: none; }
+
   /* header */
   .topline{
     display:flex; align-items:baseline; justify-content:space-between;
@@ -235,7 +258,18 @@
 
 <link rel="manifest" href="manifest.json">
 </head>
-<body>
+<body class="locked">
+<div id="pwGate">
+  <div class="box">
+    <span class="tick">LEDGER</span>
+    <h2>단가 원장 대시보드</h2>
+    <p>비밀번호를 입력해주세요</p>
+    <input type="password" id="pwInput" placeholder="비밀번호" autocomplete="off">
+    <button id="pwSubmit">입장</button>
+    <div class="err" id="pwErr">비밀번호가 올바르지 않습니다</div>
+  </div>
+</div>
+<div id="appContent">
 <div class="wrap">
 
   <div class="topline">
@@ -289,8 +323,54 @@
 
   <footer>이 저장소에 <code>data.xlsx</code>(또는 <code>data.xlsx.xlsx</code>)가 있으면 모든 기기에서 자동으로 같은 데이터를 봅니다. <span class="clearlink" id="refreshShared">새로고침</span><span class="admin-only"> · <span class="clearlink" id="clearData">저장된 데이터 지우기</span></span></footer>
 </div>
+</div>
 
 <script>
+// --- 비밀번호 게이트 (가벼운 보호 — 서버가 없는 정적 페이지라 완벽한 보안은 아닙니다) ---
+const PW_HASH = '5638742e045ea6734f760aaf2d70fdbe367a0db9fb60daded4d21c82f4c0d63b';
+const PW_SESSION_KEY = 'ledgerUnlocked';
+
+async function sha256Hex(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function tryUnlock(pw){
+  const hash = await sha256Hex(pw);
+  if (hash === PW_HASH){
+    sessionStorage.setItem(PW_SESSION_KEY, '1');
+    document.body.classList.remove('locked');
+    document.getElementById('pwGate').style.display = 'none';
+    return true;
+  }
+  return false;
+}
+
+(function initGate(){
+  const gate = document.getElementById('pwGate');
+  const input = document.getElementById('pwInput');
+  const submitBtn = document.getElementById('pwSubmit');
+  const err = document.getElementById('pwErr');
+
+  if (sessionStorage.getItem(PW_SESSION_KEY) === '1'){
+    document.body.classList.remove('locked');
+    gate.style.display = 'none';
+    return;
+  }
+
+  const submit = async () => {
+    const ok = await tryUnlock(input.value);
+    if (!ok){
+      err.style.display = 'block';
+      input.value = '';
+      input.focus();
+    }
+  };
+  submitBtn.addEventListener('click', submit);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  setTimeout(() => input.focus(), 100);
+})();
+
 const ADMIN_MODE = new URLSearchParams(location.search).get('admin') === '1';
 if (!ADMIN_MODE) document.body.classList.add('public-mode');
 
