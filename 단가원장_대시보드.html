@@ -42,6 +42,29 @@
   }
   .wrap{ max-width: 1180px; margin: 0 auto; padding: 36px 28px 80px; }
 
+  #pwGate{
+    position: fixed; inset: 0; background: var(--bg); z-index: 999;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #pwGate .box{
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    padding: 32px 28px; width: 100%; max-width: 320px; text-align: center;
+  }
+  #pwGate .tick{ display:inline-block; margin-bottom: 10px; }
+  #pwGate h2{ font-family:'Space Grotesk', sans-serif; font-size: 18px; margin: 0 0 4px; }
+  #pwGate p{ color: var(--sub); font-size: 12.5px; margin: 0 0 16px; }
+  #pwGate input{
+    width: 100%; padding: 11px 12px; border-radius: 9px; border: 1px solid var(--line);
+    font-size: 14px; font-family: inherit; text-align: center; margin-bottom: 10px;
+  }
+  #pwGate button{
+    width: 100%; padding: 11px; border-radius: 9px; border: none;
+    background: var(--brand); color: #fff; font-weight: 600; font-size: 14px; cursor: pointer;
+  }
+  #pwGate button:hover{ background: var(--brand-ink); }
+  #pwGate .err{ color: var(--up); font-size: 12px; margin-top: 8px; display: none; }
+  body.locked #appContent{ display: none; }
+
   /* header */
   .topline{
     display:flex; align-items:baseline; justify-content:space-between;
@@ -235,7 +258,18 @@
 
 <link rel="manifest" href="manifest.json">
 </head>
-<body>
+<body class="locked">
+<div id="pwGate">
+  <div class="box">
+    <span class="tick">LEDGER</span>
+    <h2>단가 원장 대시보드</h2>
+    <p>비밀번호를 입력해주세요</p>
+    <input type="password" id="pwInput" placeholder="비밀번호" autocomplete="off">
+    <button id="pwSubmit">입장</button>
+    <div class="err" id="pwErr">비밀번호가 올바르지 않습니다</div>
+  </div>
+</div>
+<div id="appContent">
 <div class="wrap">
 
   <div class="topline">
@@ -289,8 +323,54 @@
 
   <footer>이 저장소에 <code>data.xlsx</code>(또는 <code>data.xlsx.xlsx</code>)가 있으면 모든 기기에서 자동으로 같은 데이터를 봅니다. <span class="clearlink" id="refreshShared">새로고침</span><span class="admin-only"> · <span class="clearlink" id="clearData">저장된 데이터 지우기</span></span></footer>
 </div>
+</div>
 
 <script>
+// --- 비밀번호 게이트 (가벼운 보호 — 서버가 없는 정적 페이지라 완벽한 보안은 아닙니다) ---
+const PW_HASH = '5638742e045ea6734f760aaf2d70fdbe367a0db9fb60daded4d21c82f4c0d63b';
+const PW_SESSION_KEY = 'ledgerUnlocked';
+
+async function sha256Hex(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function tryUnlock(pw){
+  const hash = await sha256Hex(pw);
+  if (hash === PW_HASH){
+    sessionStorage.setItem(PW_SESSION_KEY, '1');
+    document.body.classList.remove('locked');
+    document.getElementById('pwGate').style.display = 'none';
+    return true;
+  }
+  return false;
+}
+
+(function initGate(){
+  const gate = document.getElementById('pwGate');
+  const input = document.getElementById('pwInput');
+  const submitBtn = document.getElementById('pwSubmit');
+  const err = document.getElementById('pwErr');
+
+  if (sessionStorage.getItem(PW_SESSION_KEY) === '1'){
+    document.body.classList.remove('locked');
+    gate.style.display = 'none';
+    return;
+  }
+
+  const submit = async () => {
+    const ok = await tryUnlock(input.value);
+    if (!ok){
+      err.style.display = 'block';
+      input.value = '';
+      input.focus();
+    }
+  };
+  submitBtn.addEventListener('click', submit);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  setTimeout(() => input.focus(), 100);
+})();
+
 const ADMIN_MODE = new URLSearchParams(location.search).get('admin') === '1';
 if (!ADMIN_MODE) document.body.classList.add('public-mode');
 
@@ -343,6 +423,7 @@ function diag(msg){
 }
 
 let rawRecords = [];   // {board, category, month(1-12), yearHint(or null), qty, price, use, rowOrder}
+let usageByModel = {}; // { modelName: { 'YYYY-MM': 사용수량 } } — "사용수량" 시트에서 읽음
 let charts = [];
 let currentView = 'cards';
 const STORAGE_KEY = 'priceHistoryData';
@@ -462,27 +543,71 @@ async function tryLoadSharedFile(){
     : '데이터 담당자가 자료를 올리면 자동으로 표시됩니다.';
 })();
 
+function parseUsageSheet(json){
+  // "사용수량" 시트: 모델 / 년월(YYYY-MM) / 사용수량
+  let headerIdx = -1, headers = [];
+  for (let i = 0; i < Math.min(json.length, 5); i++){
+    const row = (json[i] || []).map(normalizeHeader);
+    if (row.includes('모델') && (row.includes('년월') || row.includes('월') || row.includes('사용수량'))){
+      headerIdx = i; headers = row; break;
+    }
+  }
+  if (headerIdx === -1) return {};
+  const cModel = headers.indexOf('모델');
+  const cYm = headers.findIndex(h => h.includes('년월') || h === '월');
+  const cQty = headers.findIndex(h => h.includes('사용수량'));
+  const out = {};
+  for (let i = headerIdx + 1; i < json.length; i++){
+    const row = json[i] || [];
+    const model = row[cModel];
+    if (!model) continue;
+    let ym = row[cYm];
+    if (ym instanceof Date){ ym = ym.getFullYear() + '-' + String(ym.getMonth()+1).padStart(2,'0'); }
+    else if (ym != null){
+      const m = String(ym).match(/(\d{4})\D+(\d{1,2})/);
+      if (m) ym = m[1] + '-' + m[2].padStart(2,'0');
+    }
+    const qty = toNum(row[cQty]);
+    if (!ym || qty == null) continue;
+    const key = String(model).trim();
+    (out[key] ||= {})[ym] = (out[key][ym] || 0) + qty;
+  }
+  return out;
+}
+
 function processWorkbook(wb, sourceName, persist){
   if (!wb.SheetNames || wb.SheetNames.length === 0) throw new Error('시트를 찾을 수 없습니다');
   let allRecords = [];
   let lastHeaders = null;
+  let mergedUsage = {};
   const sheetReport = [];
   for (const name of wb.SheetNames){
     const ws = wb.Sheets[name];
     const json = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
+    if (name.includes('사용수량')){
+      const u = parseUsageSheet(json);
+      let cnt = 0;
+      Object.keys(u).forEach(model => {
+        mergedUsage[model] = { ...(mergedUsage[model] || {}), ...u[model] };
+        cnt += Object.keys(u[model]).length;
+      });
+      sheetReport.push(name + '(' + cnt + '건)');
+      continue;
+    }
     const { records, usedHeaders } = parseSheet(json, name, lastHeaders);
     if (usedHeaders) lastHeaders = usedHeaders;
     allRecords = allRecords.concat(records);
     sheetReport.push(name + '(' + records.length + '건)');
   }
   rawRecords = allRecords;
+  usageByModel = mergedUsage;
   diag('시트 ' + wb.SheetNames.length + '개 처리: ' + sheetReport.join(', '));
   filepill.style.display = 'inline-flex';
   filepill.textContent = sourceName + ' · ' + rawRecords.length + '건 인식됨';
   if (rawRecords.length === 0){
     diag('행은 읽었지만 인식된 데이터가 0건입니다 — 모든 시트에서 헤더(모델/보드 + 단가 포함 행)를 못 찾았습니다. 첫 시트 첫 5행: ' + JSON.stringify(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, raw:true, defval:null }).slice(0,5)));
   } else if (persist){
-    storageSet(STORAGE_KEY, JSON.stringify({ savedAt: Date.now(), fileName: sourceName, records: rawRecords }));
+    storageSet(STORAGE_KEY, JSON.stringify({ savedAt: Date.now(), fileName: sourceName, records: rawRecords, usage: usageByModel }));
   }
   rebuildAndRender();
 }
@@ -703,47 +828,70 @@ function renderDashboard(){
     return ca !== cb ? ca.localeCompare(cb) : a.localeCompare(b);
   });
   sortedBoards.forEach(board => {
-    let validRows = byBoard[board].filter(r => (r.qty != null || r.price != null || r.use != null) && (r.resolvedYear * 100 + r.month) <= todayKey);
-    validRows.sort((a,b) => {
-      const ak = a.resolvedYear*100+a.month, bk = b.resolvedYear*100+b.month;
-      return ak !== bk ? ak - bk : a.order - b.order;
-    });
-    if (validRows.length === 0) return;
-
-    // 입고수량이 음수인 행(물리적으로 불가능 — 테스트/오입력으로 추정)은 이상치로 표시만 합니다.
-    validRows.forEach(r => {
-      if ((r.qty || 0) < 0){
+    // 입고(진짜 신규 수량만) 이벤트 — 음수 수량은 이상치로 표시만 하고 제외
+    let receiptRows = byBoard[board].filter(r => r.qty != null && r.price != null && (r.resolvedYear * 100 + r.month) <= todayKey);
+    receiptRows.forEach(r => {
+      if (r.qty < 0){
         anomalies.push({ board, ym: r.resolvedYear + '-' + String(r.month).padStart(2,'0'), qty: r.qty, price: r.price });
       }
     });
+    receiptRows = receiptRows.filter(r => r.qty >= 0);
 
-    const byYm = {};
-    validRows.forEach(r => {
-      const ym = r.resolvedYear + '-' + String(r.month).padStart(2,'0');
-      const g = (byYm[ym] ||= { qtySum: 0, useSum: 0, lastStock: null, lastAvg: null, monthKey: r.resolvedYear*100+r.month });
-      g.qtySum += r.qty || 0;
-      g.useSum += r.use || 0;
-      if (r.stock != null) g.lastStock = r.stock;                 // 시트의 재고수량 그대로
-      if (r.sheetAvg != null) g.lastAvg = r.sheetAvg;              // 시트의 잔여재고단가 그대로
+    // "사용수량" 시트에서 이 모델의 월별 사용량 가져오기 (오늘 이후 월은 제외)
+    const usageMap = usageByModel[board] || {};
+    const usageEvents = Object.keys(usageMap)
+      .map(ym => {
+        const [y, m] = ym.split('-').map(Number);
+        return { ym, year: y, month: m, use: usageMap[ym] };
+      })
+      .filter(e => e.year * 100 + e.month <= todayKey);
+
+    if (receiptRows.length === 0 && usageEvents.length === 0) return;
+
+    // 입고·사용 이벤트를 시간순으로 합쳐서, 같은 달이면 입고를 먼저(그 달 신규입고가 그 달
+    // 사용량에도 반영되도록) 처리합니다.
+    const events = [];
+    receiptRows.forEach(r => events.push({
+      type: 'receipt', year: r.resolvedYear, month: r.month, qty: r.qty, price: r.price, order: r.order
+    }));
+    usageEvents.forEach(e => events.push({ type: 'usage', year: e.year, month: e.month, qty: e.use, order: 1e9 }));
+    events.sort((a,b) => {
+      const ak = a.year*100+a.month, bk = b.year*100+b.month;
+      if (ak !== bk) return ak - bk;
+      if (a.type !== b.type) return a.type === 'receipt' ? -1 : 1; // 같은 달이면 입고 먼저
+      return a.order - b.order;
     });
+
+    // 이동평균법: 입고 때만 평균단가가 재계산되고, 사용은 수량만 줄입니다.
+    let onHandQty = 0, onHandAvg = null;
+    const byYm = {};
+    let lastReceiptPrice = null, lastReceiptYm = null;
+    events.forEach(e => {
+      const ym = e.year + '-' + String(e.month).padStart(2,'0');
+      const g = (byYm[ym] ||= { qtySum: 0, useSum: 0 });
+      if (e.type === 'receipt'){
+        onHandAvg = onHandQty > 0 ? (onHandQty * onHandAvg + e.qty * e.price) / (onHandQty + e.qty) : e.price;
+        onHandQty += e.qty;
+        g.qtySum += e.qty;
+        lastReceiptPrice = e.price; lastReceiptYm = ym;
+      } else {
+        onHandQty = Math.max(0, onHandQty - e.qty);
+        g.useSum += e.qty;
+      }
+      g.stock = onHandQty;
+      g.avg = onHandAvg;
+    });
+
     const months = Object.keys(byYm).sort();
     if (months.length === 0) return;
-
-    // 가장 최근 실제 입고 건(수량이 있는 행)의 단가와 날짜
-    let lastReceipt = null;
-    validRows.forEach(r => {
-      if (r.qty > 0 && r.price != null){
-        lastReceipt = { price: r.price, ym: r.resolvedYear + '-' + String(r.month).padStart(2,'0') };
-      }
-    });
 
     let baseAvg = null, prevAvg = null;
     const series = months.map(ym => {
       const g = byYm[ym];
-      const avg = g.lastAvg;
+      const avg = g.avg;
       if (baseAvg === null) baseAvg = avg;
       const point = {
-        ym, avg, qty: g.qtySum, use: g.useSum, stock: g.lastStock,
+        ym, avg, qty: g.qtySum, use: g.useSum, stock: g.stock,
         vsBase: avg - baseAvg, vsPrev: prevAvg === null ? 0 : avg - prevAvg
       };
       prevAvg = avg;
@@ -757,10 +905,10 @@ function renderDashboard(){
       ym: latest.ym,
       avg: latest.avg,
       onHand: latest.stock,
-      value: latest.stock != null ? latest.stock * latest.avg : null,
+      value: (latest.stock != null && latest.avg != null && !isNaN(latest.avg)) ? latest.stock * latest.avg : null,
       qty: latest.qty,
-      latestReceiptPrice: lastReceipt ? lastReceipt.price : null,
-      latestReceiptYm: lastReceipt ? lastReceipt.ym : null,
+      latestReceiptPrice: lastReceiptPrice,
+      latestReceiptYm: lastReceiptYm,
       vsBase: latest.avg - series[0].avg,
       vsPrevEntry: prev ? latest.avg - prev.avg : 0
     };
@@ -772,7 +920,7 @@ function renderDashboard(){
   if (anomalies.length > 0){
     anomalyBar.style.display = 'block';
     anomalyBar.innerHTML = '⚠ 입고수량이 음수인 이상치 ' + anomalies.length + '건을 계산에서 자동 제외했습니다 (계산에는 영향 없음, 원본 시트 확인 권장): ' +
-      anomalies.map(a => `${a.board} · ${a.ym} · ${a.qty.toLocaleString()}개 @ $${a.price.toFixed(2)}`).join(' / ');
+      anomalies.map(a => `${a.board} · ${a.ym} · ${a.qty.toLocaleString()}개 @ ${fmt2(a.price)}`).join(' / ');
   } else {
     anomalyBar.style.display = 'none';
   }
@@ -788,7 +936,8 @@ function renderDashboard(){
   }
 }
 
-function fmtSigned(v){ const sign = v > 0 ? '+' : ''; return sign + '$' + v.toFixed(2); }
+function fmt2(v){ return (v == null || isNaN(v)) ? '-' : '$' + v.toFixed(2); }
+function fmtSigned(v){ if (v == null || isNaN(v)) return '-'; const sign = v > 0 ? '+' : ''; return sign + '$' + v.toFixed(2); }
 function trendClass(v){ return v > 0 ? 'up' : (v < 0 ? 'down' : ''); }
 
 function renderCards(models, grid){
@@ -801,7 +950,7 @@ function renderCards(models, grid){
       <tr>
         <td>${p.ym}</td>
         <td>${p.qty.toLocaleString()}개</td>
-        <td>$${p.avg.toFixed(2)}</td>
+        <td>${fmt2(p.avg)}</td>
         <td class="${trendClass(p.vsPrev)}">${fmtSigned(p.vsPrev)}</td>
         <td class="${trendClass(p.vsBase)}">${fmtSigned(p.vsBase)}</td>
         <td>${p.use ? p.use.toLocaleString()+'개' : '-'}</td>
@@ -814,7 +963,7 @@ function renderCards(models, grid){
       <div class="stat-grid">
         <div>
           <div class="stat-label">평균단가</div>
-          <div class="stat-value">$${headline.avg.toFixed(2)}</div>
+          <div class="stat-value">${fmt2(headline.avg)}</div>
           <div class="stat-sub">${headline.ym}</div>
         </div>
         <div>
@@ -824,7 +973,7 @@ function renderCards(models, grid){
         </div>
         <div>
           <div class="stat-label">최근입고단가</div>
-          <div class="stat-value">${headline.latestReceiptPrice != null ? '$'+headline.latestReceiptPrice.toFixed(2) : '-'}</div>
+          <div class="stat-value">${fmt2(headline.latestReceiptPrice)}</div>
           <div class="stat-sub">${headline.latestReceiptYm || ''}</div>
         </div>
       </div>
@@ -859,7 +1008,7 @@ function renderCards(models, grid){
       },
       options: {
         responsive: true,
-        plugins: { legend: { display:false }, tooltip: { callbacks: { label: c => '$' + c.parsed.y.toFixed(2) } } },
+        plugins: { legend: { display:false }, tooltip: { callbacks: { label: c => fmt2(c.parsed.y) } } },
         scales: {
           y: { ticks: { callback: v => '$' + v }, grace: '10%' },
           x: { grid: { display:false }, ticks: { maxTicksLimit: 6, font: { size: 10 } } }
@@ -886,7 +1035,7 @@ function renderAllTable(models, wrap){
           <td title="${category}">${category}</td>
           <td>${p.ym}</td>
           <td>${p.qty.toLocaleString()}개</td>
-          <td>$${p.avg.toFixed(2)}</td>
+          <td>${fmt2(p.avg)}</td>
           <td class="${trendClass(p.vsPrev)}">${fmtSigned(p.vsPrev)}</td>
           <td class="${trendClass(p.vsBase)}">${fmtSigned(p.vsBase)}</td>
           <td>${p.use ? p.use.toLocaleString()+'개' : '-'}</td>
