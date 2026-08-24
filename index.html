@@ -169,8 +169,17 @@
   .card .price-row{ display:flex; align-items:baseline; gap:8px; }
   .card .stat-grid{
     display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
-    margin: 4px 0 10px; padding: 12px; background: var(--line-soft); border-radius: 10px;
+    margin: 4px 0 4px; padding: 12px; background: var(--line-soft); border-radius: 10px;
   }
+  .card .stat-grid.future{
+    background: #fff6e8; margin-bottom: 10px;
+  }
+  .card .stat-grid.future .stat-value{ color: #8a5a11; }
+  .card .block-label{
+    font-family:'IBM Plex Mono', monospace; font-size: 10px; color: var(--sub);
+    text-transform: uppercase; letter-spacing: 0.06em; margin: 2px 0 4px;
+  }
+  .card .block-label.future{ color: #8a5a11; }
   .card .stat-grid .stat-label{ font-size: 10px; color: var(--sub); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .card .stat-grid .stat-value{ font-family:'IBM Plex Mono', monospace; font-weight: 700; font-size: 18px; letter-spacing: -0.01em; white-space: nowrap; }
   .card .stat-grid .stat-sub{ font-size: 10.5px; color: var(--sub); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -850,29 +859,7 @@ function renderDashboard(){
     const ca = boardCategory[a], cb = boardCategory[b];
     return ca !== cb ? ca.localeCompare(cb) : a.localeCompare(b);
   });
-  sortedBoards.forEach(board => {
-    // 입고(진짜 신규 수량만) 이벤트 — 음수 수량은 이상치로 표시만 하고 제외
-    let receiptRows = byBoard[board].filter(r => r.qty != null && r.price != null && (r.resolvedYear * 100 + r.month) <= todayKey);
-    receiptRows.forEach(r => {
-      if (r.qty < 0){
-        anomalies.push({ board, ym: r.resolvedYear + '-' + String(r.month).padStart(2,'0'), qty: r.qty, price: r.price });
-      }
-    });
-    receiptRows = receiptRows.filter(r => r.qty >= 0);
-
-    // "사용수량" 시트에서 이 모델의 월별 사용량 가져오기 (오늘 이후 월은 제외)
-    const usageMap = usageByModel[board] || {};
-    const usageEvents = Object.keys(usageMap)
-      .map(ym => {
-        const [y, m] = ym.split('-').map(Number);
-        return { ym, year: y, month: m, use: usageMap[ym] };
-      })
-      .filter(e => e.year * 100 + e.month <= todayKey);
-
-    if (receiptRows.length === 0 && usageEvents.length === 0) return;
-
-    // 입고·사용 이벤트를 시간순으로 합쳐서, 같은 달이면 입고를 먼저(그 달 신규입고가 그 달
-    // 사용량에도 반영되도록) 처리합니다.
+  function computeFromEvents(receiptRows, usageEvents){
     const events = [];
     receiptRows.forEach(r => events.push({
       type: 'receipt', year: r.resolvedYear, month: r.month, qty: r.qty, price: r.price, order: r.order
@@ -885,7 +872,6 @@ function renderDashboard(){
       return a.order - b.order;
     });
 
-    // 이동평균법: 입고 때만 평균단가가 재계산되고, 사용은 수량만 줄입니다.
     let onHandQty = 0, onHandAvg = null;
     const byYm = {};
     let lastReceiptPrice = null, lastReceiptYm = null;
@@ -906,7 +892,7 @@ function renderDashboard(){
     });
 
     const months = Object.keys(byYm).sort();
-    if (months.length === 0) return;
+    if (months.length === 0) return null;
 
     let baseAvg = null, prevAvg = null;
     const series = months.map(ym => {
@@ -935,8 +921,44 @@ function renderDashboard(){
       vsBase: latest.avg - series[0].avg,
       vsPrevEntry: prev ? latest.avg - prev.avg : 0
     };
+    return { series, headline };
+  }
 
-    models.push({ board, category: byBoard[board][0].category || 'MB', series, headline });
+  sortedBoards.forEach(board => {
+    // 입고(진짜 신규 수량만) 이벤트 — 음수 수량은 이상치로 표시만 하고 제외
+    let receiptRowsAll = byBoard[board].filter(r => r.qty != null && r.price != null);
+    receiptRowsAll.forEach(r => {
+      if (r.qty < 0){
+        anomalies.push({ board, ym: r.resolvedYear + '-' + String(r.month).padStart(2,'0'), qty: r.qty, price: r.price });
+      }
+    });
+    receiptRowsAll = receiptRowsAll.filter(r => r.qty >= 0);
+    const receiptRows = receiptRowsAll.filter(r => (r.resolvedYear * 100 + r.month) <= todayKey);
+    const futureReceiptRows = receiptRowsAll; // 오늘 이후(발주잔량) 포함 전체
+
+    // "사용수량" 시트에서 이 모델의 월별 사용량 가져오기
+    const usageMap = usageByModel[board] || {};
+    const usageEventsAll = Object.keys(usageMap).map(ym => {
+      const [y, m] = ym.split('-').map(Number);
+      return { ym, year: y, month: m, use: usageMap[ym] };
+    });
+    const usageEvents = usageEventsAll.filter(e => e.year * 100 + e.month <= todayKey);
+
+    if (receiptRows.length === 0 && usageEvents.length === 0) return;
+
+    const current = computeFromEvents(receiptRows, usageEvents);
+    if (!current) return;
+
+    // 발주잔량(오늘 이후 예정 입고)이 있을 때만 "예정" 블록을 계산합니다.
+    const hasFuture = futureReceiptRows.some(r => (r.resolvedYear * 100 + r.month) > todayKey)
+      || usageEventsAll.some(e => e.year * 100 + e.month > todayKey);
+    const future = hasFuture ? computeFromEvents(futureReceiptRows, usageEventsAll) : null;
+
+    models.push({
+      board, category: byBoard[board][0].category || 'MB',
+      series: current.series, headline: current.headline,
+      futureHeadline: future ? future.headline : null
+    });
   });
 
   const anomalyBar = document.getElementById('anomalyBar');
@@ -964,7 +986,7 @@ function fmtSigned(v){ if (v == null || isNaN(v)) return '-'; const sign = v > 0
 function trendClass(v){ return v > 0 ? 'up' : (v < 0 ? 'down' : ''); }
 
 function renderCards(models, grid){
-  models.forEach(({board, category, series, headline}) => {
+  models.forEach(({board, category, series, headline, futureHeadline}) => {
     const card = document.createElement('div');
     card.className = 'card';
     const badge = (label, v) => `<span class="badge ${trendClass(v)}">${label} ${fmtSigned(v)}</span>`;
@@ -983,6 +1005,7 @@ function renderCards(models, grid){
     card.innerHTML = `
       <div class="cat">${category}</div>
       <h2>${board}</h2>
+      <div class="block-label">현재 (오늘 기준)</div>
       <div class="stat-grid">
         <div>
           <div class="stat-label">평균단가</div>
@@ -1000,6 +1023,25 @@ function renderCards(models, grid){
           <div class="stat-sub">${headline.latestReceiptYm || ''}</div>
         </div>
       </div>
+      ${futureHeadline ? `
+      <div class="block-label future">예정 (발주잔량 포함)</div>
+      <div class="stat-grid future">
+        <div>
+          <div class="stat-label">예정 평균단가</div>
+          <div class="stat-value">${fmt2(futureHeadline.avg)}</div>
+          <div class="stat-sub">${futureHeadline.ym} 기준</div>
+        </div>
+        <div>
+          <div class="stat-label">예정 재고</div>
+          <div class="stat-value">${futureHeadline.onHand != null ? futureHeadline.onHand.toLocaleString() : '-'}개</div>
+          <div class="stat-sub">${futureHeadline.value != null ? '약 $'+futureHeadline.value.toLocaleString(undefined,{maximumFractionDigits:0}) : ''}</div>
+        </div>
+        <div>
+          <div class="stat-label">예정 입고단가</div>
+          <div class="stat-value">${fmt2(futureHeadline.latestReceiptPrice)}</div>
+          <div class="stat-sub">${futureHeadline.latestReceiptYm || ''}</div>
+        </div>
+      </div>` : ''}
       <div class="badges">
         ${badge('최초대비', headline.vsBase)}
         ${badge('전월대비', headline.vsPrevEntry)}
