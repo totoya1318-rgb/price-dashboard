@@ -855,9 +855,15 @@ function renderDashboard(){
   const anomalies = [];
   const boardCategory = {};
   Object.keys(byBoard).forEach(b => { boardCategory[b] = byBoard[b][0].category || 'MB'; });
+  const CATEGORY_ORDER = ['DDR4', 'Android MB', 'MB', 'SAP-600 MB', 'SSD'];
+  const categoryRank = (cat) => {
+    const i = CATEGORY_ORDER.indexOf(cat);
+    return i === -1 ? CATEGORY_ORDER.length : i;
+  };
   const sortedBoards = Object.keys(byBoard).sort((a,b) => {
     const ca = boardCategory[a], cb = boardCategory[b];
-    return ca !== cb ? ca.localeCompare(cb) : a.localeCompare(b);
+    const ra = categoryRank(ca), rb = categoryRank(cb);
+    return ra !== rb ? ra - rb : a.localeCompare(b);
   });
   function computeFromEvents(receiptRows, usageEvents){
     const events = [];
